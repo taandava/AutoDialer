@@ -5,48 +5,49 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Soft Depth Ambient Shadow Under 📞 Telephone Receiver -->
+    <!-- Outer Golden Ring Bevel Base (Fits inside 72dp safe zone) -->
     <path
-        android:fillColor="#38000000"
-        android:pathData="M43.5,73.5 C36.5,66.5 33,57 37.5,49.5 C40,45.5 44.5,44 47.5,47 L51.5,51 C53.5,53 53.5,56 51.5,58 L49.5,60 C52.5,65 56.5,69 61.5,72 L63.5,70 C65.5,68 68.5,68 70.5,70 L74.5,74 C77.5,77 76,81.5 72,84 C64.5,88.5 55,85 43.5,73.5 Z" />
+        android:fillColor="#C69A3B"
+        android:pathData="M54,54m-33,0a33,33 0,1 1,66 0a33,33 0,1 1,-66 0" />
 
-    <!-- Main WhatsApp-Style 3D Telephone Receiver Body 📞 -->
+    <!-- Top-Light Specular Gradient Ring Accent -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M42,71 C35,64 31.5,54.5 36,47 C38.5,43 43,41.5 46,44.5 L50,48.5 C52,50.5 52,53.5 50,55.5 L48,57.5 C51,62.5 55,66.5 60,69.5 L62,67.5 C64,65.5 67,65.5 69,67.5 L73,71.5 C76,74.5 74.5,79 70.5,81.5 C63,86 53.5,82.5 42,71 Z" />
+        android:fillColor="#F5DF92"
+        android:pathData="M54,54m-32,0a32,32 0,1 1,64 0a32,32 0,1 1,-64 0" />
 
-    <!-- Volumetric 3D Gloss / Specular Curved Highlight -->
+    <!-- Bottom-Shade Shadow Ring Accent -->
     <path
-        android:fillColor="#33FFFFFF"
-        android:pathData="M42,71 C35,64 31.5,54.5 36,47 C38.5,43 43,41.5 46,44.5 L47.5,46 C45,44 41,45 39,48 C35.5,54 38,62 44,68 C50,74 58,76.5 64,73 C67,71 68,67 66,64.5 L67.5,66 C70.5,69 69,73.5 65,76 C57.5,80.5 49,78 42,71 Z" />
+        android:fillColor="#9E7321"
+        android:pathData="M54,54m-30.5,0a30.5,30.5 0,1 1,61 0a30.5,30.5 0,1 1,-61 0" />
 
-    <!-- Inner Earpiece Acoustic Slot -->
+    <!-- Inner Dark Circular Faceplate -->
     <path
-        android:fillColor="#E76F00"
-        android:pathData="M45,47.5 C46,48.5 45.5,50 44.5,50.5 C43.5,51 42,50.5 41,49.5 C40,48.5 40.5,47 41.5,46.5 C42.5,46 44,46.5 45,47.5 Z" />
+        android:fillColor="#0B0602"
+        android:pathData="M54,54m-27,0a27,27 0,1 1,54 0a27,27 0,1 1,-54 0" />
 
-    <!-- Inner Mouthpiece Acoustic Slot -->
+    <!-- Ambient Shadow Under Golden Telephone Handset 📞 -->
     <path
-        android:fillColor="#E76F00"
-        android:pathData="M69.5,72 C70.5,73 70,74.5 69,75 C68,75.5 66.5,75 65.5,74 C64.5,73 65,71.5 66,71 C67,70.5 68.5,71 69.5,72 Z" />
+        android:fillColor="#55000000"
+        android:pathData="M44.5,71.5 C38.5,65.5 35.5,57.5 39.5,51 C41.5,47.5 45.5,46 48,48.5 L51.5,52 C53,53.5 53,56 51.5,57.5 L50,59 C52.5,63.5 56,67 60.5,69.5 L62,68 C63.5,66.5 66,66.5 67.5,68 L71,71.5 C73.5,74 72,78 68.5,80 C62,84 54,81 44.5,71.5 Z" />
 
-    <!-- Dynamic Call Pulse Sound Wave 1 (Inner Arc) 🔊 -->
+    <!-- Golden 3D Telephone Receiver Handset Body 📞 -->
     <path
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="3.2"
-        android:strokeLineCap="round"
-        android:pathData="M61,38 C66,42 69,47 70,53" />
+        android:fillColor="#E5CE64"
+        android:pathData="M43,69 C37,63 34,55 38,48.5 C40,45 44,43.5 46.5,46 L50,49.5 C51.5,51 51.5,53.5 50,55 L48.5,56.5 C51,61 54.5,64.5 59,67 L60.5,65.5 C62,64 64.5,64 66,65.5 L69.5,69 C72,71.5 70.5,75.5 67,77.5 C60.5,81.5 52.5,78.5 43,69 Z" />
 
-    <!-- Dynamic Call Pulse Sound Wave 2 (Outer Arc) 🔊 -->
+    <!-- Specular High-Gloss Metallic Highlight -->
     <path
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="3.2"
-        android:strokeLineCap="round"
-        android:pathData="M68,31 C76,36 80,44 81,52" />
+        android:fillColor="#FFF6D1"
+        android:pathData="M43,69 C37,63 34,55 38,48.5 C40,45 44,43.5 46.5,46 L47.5,47 C45.5,45.5 42,46.5 40.5,49 C37.5,54 40,61 45,66 C50,71 57,73.5 62,70.5 C64.5,69 65.5,65.5 64,63.5 L65,64.5 C67.5,67 66,71 63,73 C56.5,77 49,75 43,69 Z" />
 
-    <!-- Golden Auto-Dialer Sparkle Accent ✨ -->
+    <!-- Acoustic Earpiece Recess -->
     <path
-        android:fillColor="#FFE082"
-        android:pathData="M78,24 C78,26 76.5,27.5 75,27.5 C76.5,27.5 78,29 78,31 C78,29 79.5,27.5 81,27.5 C79.5,27.5 78,26 78,24 Z" />
+        android:fillColor="#8C6016"
+        android:pathData="M45.5,49 C46.5,50 46,51.5 45,52 C44,52.5 42.5,52 41.5,51 C40.5,50 41,48.5 42,48 C43,47.5 44.5,48 45.5,49 Z" />
+
+    <!-- Acoustic Mouthpiece Recess -->
+    <path
+        android:fillColor="#8C6016"
+        android:pathData="M66.5,70 C67.5,71 67,72.5 66,73 C65,73.5 63.5,73 62.5,72 C61.5,71 62,69.5 63,69 C64,68.5 65.5,69 66.5,70 Z" />
 
 </vector>
