@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Monochrome 📞 Telephone Receiver for Android 13+ Themed Icons -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M42,71 C35,64 31.5,54.5 36,47 C38.5,43 43,41.5 46,44.5 L50,48.5 C52,50.5 52,53.5 50,55.5 L48,57.5 C51,62.5 55,66.5 60,69.5 L62,67.5 C64,65.5 67,65.5 69,67.5 L73,71.5 C76,74.5 74.5,79 70.5,81.5 C63,86 53.5,82.5 42,71 Z" />
+
+    <!-- Monochrome Call Sound Wave 1 -->
+    <path
+        android:strokeColor="#000000"
+        android:strokeWidth="3.2"
+        android:strokeLineCap="round"
+        android:pathData="M61,38 C66,42 69,47 70,53" />
+
+    <!-- Monochrome Call Sound Wave 2 -->
+    <path
+        android:strokeColor="#000000"
+        android:strokeWidth="3.2"
+        android:strokeLineCap="round"
+        android:pathData="M68,31 C76,36 80,44 81,52" />
+
+</vector>
