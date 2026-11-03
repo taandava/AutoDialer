@@ -85,10 +85,6 @@ class AppInCallService : InCallService() {
                     applySpeakerphone(true)
                 }
 
-                // If extension DTMF is configured, inject it
-                if (activeDtmfExtension.isNotBlank()) {
-                    injectDtmfSequence(call, activeDtmfExtension, activeDtmfDelaySeconds)
-                }
 
                 // If includeDialingTime was false, start duration timer upon connection
                 if (!activeIncludeDialingTime && activeDurationLimitSeconds > 0) {
@@ -126,29 +122,6 @@ class AppInCallService : InCallService() {
             }
         } catch (e: Exception) {
             AppLogLogger.log("AppInCallService", "AudioManager speaker error: ${e.message}")
-        }
-    }
-
-    private fun injectDtmfSequence(call: Call, dtmfDigits: String, delaySeconds: Int) {
-        CoroutineScope(Dispatchers.Default).launch {
-            if (delaySeconds > 0) {
-                delay(delaySeconds.seconds)
-            }
-            AppLogLogger.log("AppInCallService", "Playing DTMF sequence: $dtmfDigits")
-            for (ch in dtmfDigits) {
-                if (ch in "0123456789*#") {
-                    try {
-                        call.playDtmfTone(ch)
-                        delay(200.milliseconds)
-                        call.stopDtmfTone()
-                        delay(150.milliseconds)
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        AppLogLogger.log("AppInCallService", "DTMF play error on $ch: ${e.message}")
-                    }
-                }
-            }
         }
     }
 
@@ -210,11 +183,6 @@ class AppInCallService : InCallService() {
         @Volatile
         var activeIncludeDialingTime: Boolean = true
 
-        @Volatile
-        var activeDtmfExtension: String = ""
-
-        @Volatile
-        var activeDtmfDelaySeconds: Int = 2
 
         /**
          * Multi-tier call disconnect engine:

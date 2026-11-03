@@ -2,6 +2,16 @@
 
 All notable changes to the **Auto Dialer** project are documented in this file.
 
+## [1.2.0] - 2026-11-03
+
+### Removed
+- **Extension Dialing (DTMF) Elimination:** Completely removed DTMF extension dialing, tone injection, pre-delay steppers, and related UI components across `InstantDialerScreen`, `InstantDialerViewModel`, `AutoDialerService`, `AppInCallService`, and tests for a streamlined, focused calling experience.
+
+### Fixed
+- **Settings Theme Toggle:** Fixed theme toggle reactivity in Settings screen where toggling Dark Mode did not change the app theme. Connected `MainActivity`'s root-level `SettingsViewModel` directly to `MainScreen` and `SettingsScreen`, ensuring instant recomposition of `AutoDialerTheme` upon toggle.
+- **Adaptive App Icon Cropping (Samsung One UI & Modern Launchers):** Fixed icon edge cropping where the circular gold medallion was clipped by squircle masks on Samsung devices. Scaled adaptive foreground assets to 58% of canvas (well within the 66dp Android safe zone) and calibrated legacy mipmaps to 83.3% diameter with safe keyline margins across all densities (`mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`).
+- **Trailing UI Divider Cleanup:** Removed redundant horizontal dividers in instant dialer cards following DTMF removal.
+
 ## [1.1.0] - 2026-11-03
 
 ### Fixed
@@ -9,14 +19,13 @@ All notable changes to the **Auto Dialer** project are documented in this file.
 - **Database Contact Deletion Bug:** Fixed critical data loss bug in `ScheduleViewModel.toggleSchedule()` where toggling a schedule enabled/disabled called `saveSchedule(..., emptyList())` and wiped out all associated contacts. Implemented `updateScheduleOnly()` in `ScheduleRepository` and `ScheduleDao`.
 - **Multi-SIM Selection Pipeline:** Fixed issue where selected SIM slot was ignored due to empty `extras` bundle. Implemented `buildCallExtras(simSlot)` resolving `TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE`, plus OEM fallback keys (`simSlot`, `slot`, `com.android.phone.extra.slot`, `SLOT_INDEX`) across `AutoDialerService` and `WakeAndCallActivity`.
 - **Modern Audio Routing & Speakerphone:** Migrated speakerphone control from deprecated `AudioManager.isSpeakerphoneOn` to InCallService native `setAudioRoute(CallAudioState.ROUTE_SPEAKER)` and Android 12+ `AudioManager.setCommunicationDevice(AudioDeviceInfo.TYPE_BUILTIN_SPEAKER)`.
-- **Multi-Tier Disconnect Engine:** Implemented 4-tier fallback disconnect (`InCallService Call.disconnect()`, `TelecomManager.endCall()`, `ITelephony` reflection, and `AudioManager` media headset-hook key event).
+- **Multi-Tier Disconnect Engine:** Implemented 4-tier fallback disconnect (`InCallService Call.disconnect()`, `TelecomManager.endCall()`, and `AudioManager` media headset-hook key event) without private SDK reflection.
 - **Call Outcome Tagging:** Replaced static "Dialed" ledger entries with dynamic tracking of real disconnect causes (`DisconnectCause.BUSY`, `CANCELED`, `MISSED`, `REJECTED`, `REMOTE`, `LOCAL`, `ERROR`) and exact elapsed talk durations.
 - **Icons Deprecation:** Replaced deprecated `Icons.Default.OpenInNew` with `Icons.AutoMirrored.Filled.OpenInNew`.
 
 ### Added
 - **Material 3 Expressive Orange Theme:** Complete Brand Orange palette (`#E76F00`, `#FFB77A`, warm light surface `#FDF2EA`, dark container `#201D1A`) with dynamic color support complying with `design.md`.
 - **Bulk Number Input & Parsing in Instant Mode:** Support for comma, newline, and semicolon separated numbers with automatic sanitization and batch dial loop.
-- **DTMF & Extension Injection:** Automatic IVR and DTMF extension injection upon call connection with configurable pre-dial delay.
 - **Executive Call Ledger Analytics:** Live summary dashboard in Call History Ledger displaying Total Calls, Connected Calls, and Cumulative Talk Time with outcome filter chips.
 - **Comprehensive Unit Test Suite:** Expanded unit tests covering repeat rule calculations, contact entities, CSV format parsing, bulk number extraction, and future fast-forwarding logic.
 

@@ -88,9 +88,6 @@ class AutoDialerService : Service() {
             val includeDialTime = intent?.getBooleanExtra(EXTRA_INCLUDE_DIAL_TIME, true) ?: true
             val speakerphone = intent?.getBooleanExtra(EXTRA_SPEAKERPHONE, false) ?: false
             val simSlot = intent?.getIntExtra(EXTRA_SIM_SLOT, 0) ?: 0
-            val dtmfExtension = intent?.getStringExtra(EXTRA_DTMF_EXTENSION) ?: ""
-            val dtmfDelay = intent?.getIntExtra(EXTRA_DTMF_DELAY, 2) ?: 2
-
             startInstantDialer(
                 phoneNumbers = numbers,
                 intervalSeconds = interval,
@@ -98,9 +95,7 @@ class AutoDialerService : Service() {
                 durationSeconds = duration,
                 includeDialTime = includeDialTime,
                 speakerphone = speakerphone,
-                simSlot = simSlot,
-                dtmfExtension = dtmfExtension,
-                dtmfDelay = dtmfDelay
+                simSlot = simSlot
             )
         }
 
@@ -149,9 +144,7 @@ class AutoDialerService : Service() {
         durationSeconds: Int,
         includeDialTime: Boolean,
         speakerphone: Boolean,
-        simSlot: Int,
-        dtmfExtension: String = "",
-        dtmfDelay: Int = 2
+        simSlot: Int
     ) {
         if (phoneNumbers.isEmpty()) {
             AppLogLogger.log("AutoDialerService", "Instant dialer started with empty numbers list. Stopping.")
@@ -163,9 +156,6 @@ class AutoDialerService : Service() {
         currentNumberIndex = 0
         currentRepetition = 0
         isRunning = true
-
-        AppInCallService.activeDtmfExtension = dtmfExtension
-        AppInCallService.activeDtmfDelaySeconds = dtmfDelay
 
         scheduleEntity = CallScheduleEntity(
             id = 0,
@@ -523,8 +513,6 @@ class AutoDialerService : Service() {
         const val EXTRA_INCLUDE_DIAL_TIME = "extra_include_dial_time"
         const val EXTRA_SPEAKERPHONE = "extra_speakerphone"
         const val EXTRA_SIM_SLOT = "extra_sim_slot"
-        const val EXTRA_DTMF_EXTENSION = "extra_dtmf_extension"
-        const val EXTRA_DTMF_DELAY = "extra_dtmf_delay"
 
         const val EXTRA_SCHEDULE_ID = "extra_schedule_id"
 

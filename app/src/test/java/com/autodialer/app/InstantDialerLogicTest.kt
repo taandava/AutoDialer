@@ -23,10 +23,14 @@ class InstantDialerLogicTest {
     }
 
     @Test
-    fun testDtmfSanitizationLogic() {
-        val rawDtmf = "101#*abcd9"
-        val sanitized = rawDtmf.filter { it.isDigit() || it == '*' || it == '#' }
-        assertEquals("101#*9", sanitized)
+    fun testEmptyAndInvalidNumbersFiltering() {
+        val emptyInput = "   ; , \n ;; "
+        val parsedEmpty = emptyInput.split(',', '\n', ';')
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .map { it.replace(Regex("[^0-9+]"), "") }
+            .filter { it.length >= 3 }
+        assertTrue(parsedEmpty.isEmpty())
     }
 
     @Test
@@ -44,4 +48,3 @@ class InstantDialerLogicTest {
         assertEquals(3600, clampedDuration)
     }
 }
-

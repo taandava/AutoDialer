@@ -111,15 +111,12 @@ fun InstantDialerScreen(
     val durationLimitSeconds by viewModel.durationLimitSeconds.collectAsState()
     val includeDialingTime by viewModel.includeDialingTime.collectAsState()
     val isSpeakerphoneEnabled by viewModel.isSpeakerphoneEnabled.collectAsState()
-    val dtmfExtension by viewModel.dtmfExtension.collectAsState()
-    val dtmfDelaySeconds by viewModel.dtmfDelaySeconds.collectAsState()
     val dialerState by viewModel.dialerState.collectAsState()
 
     val parsedNumbers = remember(phoneNumber) { viewModel.getParsedNumbers() }
     val isDialing = dialerState != "Idle" && dialerState != "Stopped"
     val scrollState = rememberScrollState()
 
-    var showDtmfSettings by remember { mutableStateOf(dtmfExtension.isNotBlank()) }
 
     Column(
         modifier = Modifier
@@ -344,58 +341,6 @@ fun InstantDialerScreen(
                                 tint = if (isSpeakerphoneEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(20.dp)
                             )
-                        }
-                    }
-
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f))
-
-                    // DTMF Extension Toggle Row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("DTMF Extension Digits", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
-                            Text("Auto-dial digits/IVR upon connection", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
-                        }
-                        Switch(
-                            checked = showDtmfSettings,
-                            onCheckedChange = {
-                                showDtmfSettings = it
-                                if (!it) viewModel.setDtmfExtension("")
-                            },
-                            modifier = Modifier.height(26.dp)
-                        )
-                    }
-
-                    if (showDtmfSettings) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            OutlinedTextField(
-                                value = dtmfExtension,
-                                onValueChange = { viewModel.setDtmfExtension(it) },
-                                placeholder = { Text("e.g. 101#", fontSize = 12.sp) },
-                                label = { Text("Extension Digits", fontSize = 10.sp) },
-                                modifier = Modifier.weight(1f),
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Done),
-                                keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
-                            )
-
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("Pre-Delay", style = MaterialTheme.typography.labelSmall, fontSize = 9.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                NumberStepper(
-                                    value = dtmfDelaySeconds,
-                                    onValueChange = { viewModel.setDtmfDelaySeconds(it) },
-                                    minValue = 1,
-                                    maxValue = 30,
-                                    fieldWidth = 36.dp
-                                )
-                            }
                         }
                     }
                 }

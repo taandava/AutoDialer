@@ -33,6 +33,7 @@ import com.autodialer.app.ui.permissions.PermissionManagerScreen
 import com.autodialer.app.ui.schedule.AddEditScheduleScreen
 import com.autodialer.app.ui.schedule.ScheduleListScreen
 import com.autodialer.app.ui.settings.SettingsScreen
+import com.autodialer.app.ui.settings.SettingsViewModel
 
 sealed class Screen(val route: String, val title: String, val icon: @Composable () -> Unit) {
     object Instant : Screen("instant", "Auto Dialer", { Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(18.dp)) })
@@ -46,7 +47,8 @@ sealed class Screen(val route: String, val title: String, val icon: @Composable 
 @Composable
 @Suppress("FunctionName")
 fun MainScreen(
-    instantViewModel: InstantDialerViewModel
+    instantViewModel: InstantDialerViewModel,
+    settingsViewModel: SettingsViewModel
 ) {
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
@@ -266,6 +268,7 @@ fun MainScreen(
 
             composable(Screen.Settings.route) {
                 SettingsScreen(
+                    viewModel = settingsViewModel,
                     onNavigateToPermissions = {
                         keyboardController?.hide()
                         focusManager.clearFocus(force = true)

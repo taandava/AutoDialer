@@ -25,7 +25,7 @@
 
 The app is built around two primary execution modes accessed via a top horizontal tab bar (`ViewPager` with `TabLayout`):
 
-1. **AUTO REDIAL (Single Target Mode):** Continually dials a single specified phone number with defined retries, delay intervals, call duration limits, and DTMF extension sequences.
+1. **AUTO REDIAL (Single Target Mode):** Continually dials a single specified phone number with defined retries, delay intervals, call duration limits, and call duration limits.
 2. **AUTO REDIAL LIST (Campaign Queue Mode):** Sequentially dials a list/queue of contacts stored in a Room database (`calltask_table_4`), maintaining state, repetition counters, specific SIM rules, and color-coded tags.
 
 ---
@@ -40,14 +40,6 @@ The app is built around two primary execution modes accessed via a top horizonta
 - **Input Field:** Direct phone number edit box with text validation.
 - **Contact Picker Integration:** Contact button (`imagebuttonAddFromContact`) opening system contact selector (`android.intent.action.PICK` for `vnd.android.cursor.dir/phone_v2`).
 - **Country Identification:** Automatically parses international phone prefixes and displays country name (`textViewCountryOfNumber`).
-
-### 2.3 DTMF & Extension Dialing
-- **Extension Number Checkbox:** Enable/disable dialing DTMF extension digits after call connection.
-- **Pre-Dial Delay:** Configurable pause/delay before dialing extension digits (in seconds).
-- **Inter-Digit Delay:** Configurable interval/delay between individual extension digits.
-- **Extension Method Selector (`spinnerDialerMethod`):**
-  - *Dialing with parameters:* Standard automated redialing with interval and duration limits.
-  - *Dialing extension:* Automatic DTMF tone injection upon call pickup.
 
 ### 2.4 Call Control Parameters
 - **Interval Between Calls:** Precise countdown timer (in seconds) between call attempts (adjusted via increment/decrement arrows or direct number entry). Default: 3 seconds.
@@ -73,7 +65,6 @@ Each entry in the list contains detailed custom parameters:
 2. **SIM Assignment:** Specific SIM card (SIM 1 / SIM 2) assigned to this particular number.
 3. **Repetitions Count:** Number of retry attempts for this specific contact.
 4. **Custom Call Duration:** Individual call duration limit override for this contact.
-5. **Extension Digits & Delay:** Custom DTMF extension sequence and initial delay.
 6. **Active Status Toggle (`status`):** Enable/disable individual contact without deleting it (1 = Active, 0 = Paused/Disabled).
 7. **Custom Comments:** Free-form text notes for each contact.
 8. **Sticky Badge / Tag (`stick_text` & `stick_color`):** Color-coded labels (e.g., "VIP", "Follow Up", "Urgent").
@@ -97,7 +88,6 @@ When an automated call is active, `CallActivity` provides a full custom In-Call 
 ### 4.2 Interactive Controls
 - **Speakerphone Toggle:** Auto-activates or manually toggles phone speaker (`EXTRA_SPEAKERPHONE`).
 - **Microphone Mute:** Mute/unmute microphone (`EXTRA_MICROPHONE`).
-- **In-Call DTMF Keypad:** Animated slide-up/slide-down dialpad (`dialpad`, `slide_up`, `slide_down`) for manually entering DTMF codes during call.
 - **Hang Up / Abort:** Large prominent red end-call button.
 - **Pause Campaign Button (`CallActivityCallByList`):** Temporarily pause list execution mid-campaign.
 
@@ -123,8 +113,6 @@ Accessible via the top overflow menu (3 dots):
 ### 6.1 Call & Audio Defaults
 - Default SIM preference.
 - Auto-enable Speakerphone on call start (`is_speakerphone_enabled_`).
-- Delay before DTMF extension dialing (`DELAY_BEFORE_DIAL_EXTENSION_NUMBER__`).
-- Delay between DTMF digits (`DELAY_BETWEEN_DIGITS_IN_EXTENSION_NUMBER`).
 
 ### 6.2 System & Dialer Integration
 - Request to become Android Default Dialer (`CHANGE_DEFAULT_DIALER`).
@@ -155,7 +143,6 @@ The app uses **Room Persistence Library** with two main database files:
 | `duration` | TEXT NOT NULL | Max call duration limit (sec) |
 | `sim_id` | TEXT NOT NULL | Preferred SIM slot (1 or 2) |
 | `status` | TEXT NOT NULL | Active status (1 = Active, 0 = Paused) |
-| `ext_number` | TEXT NOT NULL | DTMF Extension digits |
 | `ext_nameB` | TEXT NOT NULL | Extension label |
 | `comments` | TEXT NOT NULL | Custom contact comment |
 | `stick_text` | TEXT NOT NULL | Sticky badge text |

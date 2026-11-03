@@ -34,12 +34,6 @@ class InstantDialerViewModel : ViewModel() {
     private val _isSpeakerphoneEnabled = MutableStateFlow(prefs.defaultSpeakerphoneEnabled)
     val isSpeakerphoneEnabled: StateFlow<Boolean> = _isSpeakerphoneEnabled.asStateFlow()
 
-    private val _dtmfExtension = MutableStateFlow("")
-    val dtmfExtension: StateFlow<String> = _dtmfExtension.asStateFlow()
-
-    private val _dtmfDelaySeconds = MutableStateFlow(2)
-    val dtmfDelaySeconds: StateFlow<Int> = _dtmfDelaySeconds.asStateFlow()
-
     val dialerState: StateFlow<String> = AutoDialerService.dialStateFlow
 
     fun setPhoneNumber(number: String) {
@@ -71,14 +65,6 @@ class InstantDialerViewModel : ViewModel() {
         _durationLimitSeconds.value = seconds.coerceIn(1, 3600)
     }
 
-    fun setDtmfExtension(dtmf: String) {
-        _dtmfExtension.value = dtmf.filter { it.isDigit() || it == '*' || it == '#' }
-    }
-
-    fun setDtmfDelaySeconds(seconds: Int) {
-        _dtmfDelaySeconds.value = seconds.coerceIn(1, 60)
-    }
-
     fun toggleIncludeDialingTime() {
         _includeDialingTime.value = !_includeDialingTime.value
     }
@@ -108,8 +94,6 @@ class InstantDialerViewModel : ViewModel() {
             putExtra(AutoDialerService.EXTRA_INCLUDE_DIAL_TIME, _includeDialingTime.value)
             putExtra(AutoDialerService.EXTRA_SPEAKERPHONE, _isSpeakerphoneEnabled.value)
             putExtra(AutoDialerService.EXTRA_SIM_SLOT, _selectedSimSlot.value)
-            putExtra(AutoDialerService.EXTRA_DTMF_EXTENSION, _dtmfExtension.value)
-            putExtra(AutoDialerService.EXTRA_DTMF_DELAY, _dtmfDelaySeconds.value)
         }
 
         context.startForegroundService(intent)

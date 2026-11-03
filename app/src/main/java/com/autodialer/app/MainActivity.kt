@@ -42,7 +42,8 @@ class MainActivity : ComponentActivity() {
 
             AutoDialerTheme(darkTheme = isDarkTheme) {
                 MainScreen(
-                    instantViewModel = instantViewModel
+                    instantViewModel = instantViewModel,
+                    settingsViewModel = settingsViewModel
                 )
             }
         }
