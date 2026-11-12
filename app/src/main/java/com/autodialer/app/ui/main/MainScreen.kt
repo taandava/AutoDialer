@@ -136,14 +136,13 @@ fun MainScreen(
                 Surface(
                     color = MaterialTheme.colorScheme.surface,
                     tonalElevation = 2.dp,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .statusBarsPadding()
-                        .height(44.dp)
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
                         modifier = Modifier
-                            .fillMaxSize()
+                            .fillMaxWidth()
+                            .statusBarsPadding()
+                            .height(48.dp)
                             .padding(horizontal = 12.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
@@ -205,13 +204,13 @@ fun MainScreen(
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceContainer,
                     tonalElevation = 3.dp,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .navigationBarsPadding()
-                        .height(52.dp)
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .navigationBarsPadding()
+                            .height(56.dp),
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically
                     ) {

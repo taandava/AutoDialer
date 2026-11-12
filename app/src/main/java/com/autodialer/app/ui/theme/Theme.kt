@@ -1,5 +1,6 @@
 package com.autodialer.app.ui.theme
 
+import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -8,8 +9,12 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
     primary = DarkOrangePrimary,
@@ -66,16 +71,25 @@ private val LightColorScheme = lightColorScheme(
 /**
  * ================================================================================================
  * WHAT IS IT:
- * Root Material 3 theme Composable providing color schemes, shapes, and typography across the app.
+ * Root Material 3 theme Composable providing color schemes, shapes, typography, and dynamic
+ * system bar (status bar and navigation bar) contrast synchronization across the application.
  *
  * WHAT IT DOES:
  * 1. Resolves dynamic color schemes on Android 12+ (API 31+) if enabled.
- * 2. Provides custom Brand Orange [DarkColorScheme] and [LightColorScheme].
- * 3. Binds MaterialTheme composable down the tree.
+ * 2. Applies custom Brand Orange [DarkColorScheme] and [LightColorScheme].
+ * 3. Logically resolves system bar contrast conflicts across dark and light themes:
+ *    - In Light Theme: Enforces `isAppearanceLightStatusBars = true` and `isAppearanceLightNavigationBars = true`,
+ *      directing the OS to render DARK status bar icons (clock, battery, Wi-Fi) and DARK navigation bar
+ *      buttons for high contrast against light surfaces.
+ *    - In Dark Theme: Enforces `isAppearanceLightStatusBars = false` and `isAppearanceLightNavigationBars = false`,
+ *      directing the OS to render LIGHT (white) icons for high contrast against dark surfaces.
+ * 4. Transparently configures edge-to-edge system window decor without obscuring content.
+ * 5. Binds [MaterialTheme] down the Compose component tree.
  *
  * WHAT THINGS IT IS LINKED WITH:
  * - Host Activity: [com.autodialer.app.MainActivity]
- * - Tokens: `Color.kt`
+ * - Color Palette: `Color.kt`
+ * - System Framework: [WindowCompat], [androidx.core.view.WindowInsetsControllerCompat]
  * ================================================================================================
  */
 @Composable
@@ -92,6 +106,18 @@ fun AutoDialerTheme(
         }
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
+    }
+
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as? Activity)?.window ?: return@SideEffect
+
+            // Resolve status bar and navigation bar contrast conflicts dynamically
+            val insetsController = WindowCompat.getInsetsController(window, view)
+            insetsController.isAppearanceLightStatusBars = !darkTheme
+            insetsController.isAppearanceLightNavigationBars = !darkTheme
+        }
     }
 
     MaterialTheme(

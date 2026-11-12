@@ -10,6 +10,8 @@ All notable changes to the **Auto Dialer** project are documented in this file.
 - **Extraction Guide:** Added `HOW_TO_BUILD_AND_UPDATE.md` inside the embedded codebase folder.
 
 ### Fixed
+- **Dynamic System Bar Contrast Synchronization:** Resolved conflict where switching to Light Theme rendered status bar icons and navigation buttons invisible. Added `SideEffect` in `AutoDialerTheme` dynamically updating `WindowInsetsControllerCompat.isAppearanceLightStatusBars = !darkTheme` and `isAppearanceLightNavigationBars = !darkTheme`, ensuring dark icons on light surfaces and light icons on dark surfaces.
+- **Edge-to-Edge Surface & TopBar Inset Architecture:** Refactored top bar and bottom bar surfaces across `MainScreen`, `CallLedgerScreen`, `AddEditScheduleScreen`, and `PermissionManagerScreen`. Surfaces now extend cleanly behind status and navigation bars while padding internal row content, preventing camera cutout crowding and ensuring navigation buttons sit directly over high-contrast theme surfaces.
 - **JDK 21 Environment Integration:** Updated `gradle.properties` and Windows environment configuration to point to JDK 21 (`jdk-21.0.13.9-hotspot`), ensuring seamless command-line build execution without path conflicts.
 - **Static Telephony Helper Refactoring:** Refactored `AutoDialerService.buildCallExtras()` to a public companion object method with context pass-through, eliminating code duplication across `AutoDialerService` and `WakeAndCallActivity`.
 

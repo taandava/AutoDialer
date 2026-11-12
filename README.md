@@ -42,7 +42,8 @@
 
 7. **Modern Material 3 Expressive Design & Edge-to-Edge:**
    - Refined Orange brand palette (`#E76F00`, `#FFB77A`, warm surfaces `#FDF2EA`, `#201D1A`) with dynamic dark/light theme switching.
-   - Adaptive Edge-to-Edge with status bar and navigation bar insets (`statusBarsPadding()`, `navigationBarsPadding()`).
+   - **Dynamic System Bar Contrast Synchronization:** Automated `WindowInsetsControllerCompat` synchronization ensuring status bar icons and navigation buttons dynamically switch between dark (in Light Theme) and white (in Dark Theme), eliminating invisible system bar conflicts across all devices and themes.
+   - Adaptive Edge-to-Edge with full-bleed background surfaces and safe inset padding (`statusBarsPadding()`, `navigationBarsPadding()`).
    - **Perfect Adaptive Launcher Icon Suite:** Gold telephone receiver emblem calibrated to 58% of canvas for 100% squircle and circle safe-zone compliance (zero cropping on Samsung One UI, Pixel, and other Android launchers).
 
 ---
