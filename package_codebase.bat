@@ -8,3 +8,4 @@ if %ERRORLEVEL% EQU 0 (
     echo [ERROR] Packaging failed with exit code %ERRORLEVEL%
 )
 endlocal
+

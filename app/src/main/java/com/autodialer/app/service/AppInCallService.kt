@@ -7,13 +7,17 @@ import android.content.pm.PackageManager
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.os.Build
+import android.os.OutcomeReceiver
 import android.telecom.Call
 import android.telecom.CallAudioState
+import android.telecom.CallEndpoint
+import android.telecom.CallEndpointException
 import android.telecom.DisconnectCause
 import android.telecom.InCallService
 import android.telecom.TelecomManager
 import android.telephony.TelephonyManager
 import android.view.KeyEvent
+import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import com.autodialer.app.data.local.AppLogLogger
 import kotlinx.coroutines.CoroutineScope
@@ -22,6 +26,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -54,6 +59,18 @@ import kotlin.time.Duration.Companion.seconds
 class AppInCallService : InCallService() {
 
     private var durationTimerJob: Job? = null
+    private val availableEndpoints = CopyOnWriteArrayList<CallEndpoint>()
+
+    /**
+     * Android 14+ (API 34+) callback invoked when available call audio endpoints change.
+     */
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    override fun onAvailableCallEndpointsChanged(endpoints: List<CallEndpoint>) {
+        super.onAvailableCallEndpointsChanged(endpoints)
+        availableEndpoints.clear()
+        availableEndpoints.addAll(endpoints)
+        AppLogLogger.log("AppInCallService", "Available CallEndpoints updated: ${endpoints.size} endpoints")
+    }
 
     /**
      * Called by Telecom subsystem when an outbound call is created and registered.
@@ -119,17 +136,23 @@ class AppInCallService : InCallService() {
     }
 
     /**
-     * Configures audio output to built-in speaker or earpiece using modern platform APIs.
+     * Configures audio output to built-in speaker or earpiece using modern platform APIs
+     * with comprehensive backwards compatibility across all supported Android versions.
      */
     private fun applySpeakerphone(enable: Boolean) {
         try {
-            // Priority 1: InCallService native audio route
-            setAudioRoute(if (enable) CallAudioState.ROUTE_SPEAKER else CallAudioState.ROUTE_EARPIECE)
+            // Priority 1: InCallService native audio routing
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                routeAudioViaCallEndpoint(enable)
+            } else {
+                applyLegacyAudioRoute(if (enable) CallAudioState.ROUTE_SPEAKER else CallAudioState.ROUTE_EARPIECE)
+            }
         } catch (e: Exception) {
-            AppLogLogger.log("AppInCallService", "setAudioRoute error: ${e.message}")
+            AppLogLogger.log("AppInCallService", "InCallService audio routing error: ${e.message}")
         }
 
         try {
+            // Priority 2: AudioManager communication device routing
             val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 if (enable) {
@@ -143,11 +166,58 @@ class AppInCallService : InCallService() {
                     audioManager.clearCommunicationDevice()
                 }
             } else {
-                audioManager.isSpeakerphoneOn = enable
+                applyLegacySpeakerphone(audioManager, enable)
             }
         } catch (e: Exception) {
             AppLogLogger.log("AppInCallService", "AudioManager speaker error: ${e.message}")
         }
+    }
+
+    /**
+     * Routes call audio using Android 14+ [CallEndpoint] and [requestCallEndpointChange].
+     */
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    private fun routeAudioViaCallEndpoint(enable: Boolean) {
+        val targetType = if (enable) CallEndpoint.TYPE_SPEAKER else CallEndpoint.TYPE_EARPIECE
+        val targetEndpoint = availableEndpoints.find { it.endpointType == targetType }
+        if (targetEndpoint != null) {
+            requestCallEndpointChange(
+                targetEndpoint,
+                ContextCompat.getMainExecutor(this),
+                object : OutcomeReceiver<Void, CallEndpointException> {
+                    override fun onResult(result: Void?) {
+                        AppLogLogger.log("AppInCallService", "CallEndpoint changed successfully to type $targetType")
+                    }
+
+                    override fun onError(error: CallEndpointException) {
+                        AppLogLogger.log("AppInCallService", "CallEndpoint change failed: ${error.message}, falling back to legacy route")
+                        applyLegacyAudioRoute(if (enable) CallAudioState.ROUTE_SPEAKER else CallAudioState.ROUTE_EARPIECE)
+                    }
+                }
+            )
+        } else {
+            // If endpoints have not populated yet, use legacy route
+            applyLegacyAudioRoute(if (enable) CallAudioState.ROUTE_SPEAKER else CallAudioState.ROUTE_EARPIECE)
+        }
+    }
+
+    /**
+     * Backwards-compatibility helper executing legacy [setAudioRoute] on Android versions
+     * prior to Android 14 (API 34).
+     */
+    @Suppress("DEPRECATION")
+    private fun applyLegacyAudioRoute(route: Int) {
+        setAudioRoute(route)
+    }
+
+    /**
+     * Backwards-compatibility helper setting [AudioManager.isSpeakerphoneOn] on Android
+     * versions prior to Android 12 (API 31), where [AudioManager.setCommunicationDevice]
+     * was introduced.
+     */
+    @Suppress("DEPRECATION")
+    private fun applyLegacySpeakerphone(audioManager: AudioManager, enable: Boolean) {
+        audioManager.isSpeakerphoneOn = enable
     }
 
     /**
@@ -242,8 +312,10 @@ class AppInCallService : InCallService() {
 
                     if (hasPermission) {
                         val telecomManager = context.getSystemService(Context.TELECOM_SERVICE) as? TelecomManager
-                        telecomManager?.endCall()
-                        AppLogLogger.log("AppInCallService", "Tier 2 TelecomManager.endCall() invoked successfully")
+                        if (telecomManager != null) {
+                            invokeLegacyTelecomEndCall(telecomManager)
+                            AppLogLogger.log("AppInCallService", "Tier 2 TelecomManager.endCall() invoked successfully")
+                        }
                     }
                 } catch (e: Exception) {
                     AppLogLogger.log("AppInCallService", "Tier 2 TelecomManager.endCall() failed: ${e.message}")
@@ -265,6 +337,17 @@ class AppInCallService : InCallService() {
                     AppLogLogger.log("AppInCallService", "Tier 3 media keyevent failed: ${e.message}")
                 }
             }
+        }
+
+        /**
+         * Backwards-compatibility fallback invoking [TelecomManager.endCall] on Android 9+ (API 28+)
+         * when the primary [InCallService] [Call] object is unavailable or unbound.
+         * Deprecated in API 29 by Google in favor of [InCallService.Call.disconnect], which is
+         * utilized as Tier 1 above.
+         */
+        @Suppress("DEPRECATION")
+        private fun invokeLegacyTelecomEndCall(telecomManager: TelecomManager): Boolean {
+            return telecomManager.endCall()
         }
     }
 }
