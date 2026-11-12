@@ -1,3 +1,24 @@
+"""
+====================================================================================================
+WHAT IS IT:
+Automated build, packaging, injection, signing, and device deployment orchestration pipeline
+for the Auto Dialer Android application.
+
+WHAT IT DOES:
+1. Gathers clean project source code, excluding build artifacts, local caches, and private keys.
+2. Injects clean source files into standard Android asset directory `app/src/main/assets/codebase/`.
+3. Compiles production release APK via Gradle (`./gradlew.bat assembleRelease`).
+4. Injects top-level `codebase/` directory into root of release APK archive for 1-click zip extraction.
+5. Signs output APK (`autodialer-release-signed.apk`) using Android SDK `apksigner` (v2 & v3 schemes).
+6. Verifies archive integrity, extraction structure, and test installs on connected ADB device.
+
+WHAT THINGS IT IS LINKED WITH:
+- Upstream Source: Root project filesystem (`app/src/`, `gradle/`, `*.gradle.kts`, `README.md`)
+- Downstream Outputs: `autodialer-release-signed.apk` (with embedded portable codebase)
+- Build Systems: Gradle wrapper, Android SDK build-tools (`apksigner`), Android Debug Bridge (`adb`)
+====================================================================================================
+"""
+
 import os
 import shutil
 import zipfile
@@ -24,6 +45,12 @@ EXCLUDE_FILES = {
 }
 
 def collect_source_files():
+    """
+    WHAT IS IT: Source tree scanner and collector.
+    WHAT IT DOES: Recursively scans repository root, filtering out binaries, cache directories,
+                 and credentials, returning relative paths of pure buildable source files.
+    WHAT THINGS IT IS LINKED WITH: [EXCLUDE_DIRS], [EXCLUDE_EXTS], [EXCLUDE_FILES].
+    """
     if os.path.exists(ASSETS_CODEBASE_DIR):
         shutil.rmtree(ASSETS_CODEBASE_DIR)
     source_files = []
@@ -41,6 +68,12 @@ def collect_source_files():
     return source_files
 
 def prepare_assets_codebase(source_files):
+    """
+    WHAT IS IT: Android asset staging manager.
+    WHAT IT DOES: Copies gathered source files into 'app/src/main/assets/codebase/' and generates
+                 'HOW_TO_BUILD_AND_UPDATE.md' instruction guide.
+    WHAT THINGS IT IS LINKED WITH: [ASSETS_CODEBASE_DIR], Gradle APK packaging.
+    """
     if os.path.exists(ASSETS_CODEBASE_DIR):
         shutil.rmtree(ASSETS_CODEBASE_DIR)
     os.makedirs(ASSETS_CODEBASE_DIR, exist_ok=True)
@@ -79,7 +112,7 @@ This folder contains the complete, buildable native Android project source code 
    .\\gradlew.bat testDebugUnitTest
    ```
 5. **Signing & Installation**:
-   - Generated APK will be in `app/build/outputs/apk/release/app-release-unsigned.apk`.
+   - Generated APK will be in `app/build/outputs/apk/release/app-release.apk`.
    - Sign with standard `apksigner` and install with `adb install -r <apk_name>`.
 
 ---
@@ -88,6 +121,11 @@ Generated directly inside `autodialer-release-signed.apk` for portable codebase 
     print("[1/6] assets/codebase prepared successfully.")
 
 def build_release_apk():
+    """
+    WHAT IS IT: Gradle release compilation executor.
+    WHAT IT DOES: Spawns Gradle daemon with JDK 21 to execute 'assembleRelease'.
+    WHAT THINGS IT IS LINKED WITH: gradlew.bat, app/build.gradle.kts.
+    """
     print("[2/6] Building release APK with Gradle...")
     env = os.environ.copy()
     env['JAVA_HOME'] = r'C:\Program Files\Eclipse Adoptium\jdk-21.0.13.9-hotspot'
@@ -101,6 +139,12 @@ def build_release_apk():
     print("[2/6] Gradle assembleRelease succeeded.")
 
 def package_and_sign(source_files):
+    """
+    WHAT IS IT: ZIP archive injector and apksigner cryptographic signing runner.
+    WHAT IT DOES: Injects root 'codebase/' directory into the release APK, then signs
+                 with apksigner applying APK Signature Schemes v2 and v3.
+    WHAT THINGS IT IS LINKED WITH: [TARGET_APK], [APKSIGNER], [KEYSTORE].
+    """
     built_apk = os.path.join(ROOT_DIR, 'app', 'build', 'outputs', 'apk', 'release', 'app-release.apk')
     print(f"[3/6] Packaging root 'codebase/' directory into APK from {built_apk}...")
     shutil.copy2(built_apk, TARGET_APK)
@@ -139,6 +183,12 @@ def package_and_sign(source_files):
     print("[4/6] Verification output:\n", res_verify.stdout)
 
 def verify_extraction():
+    """
+    WHAT IS IT: Archive integrity and portability verification inspector.
+    WHAT IT DOES: Inspects APK ZIP entries to ensure 'codebase/' and 'assets/codebase/'
+                 contain all essential source files required for standalone project builds.
+    WHAT THINGS IT IS LINKED WITH: [TARGET_APK].
+    """
     print("[5/6] Verifying APK extraction contents...")
     with zipfile.ZipFile(TARGET_APK, 'r') as z:
         names = z.namelist()
@@ -151,6 +201,12 @@ def verify_extraction():
     print("[5/6] Verification of extraction succeeded!")
 
 def install_and_launch():
+    """
+    WHAT IS IT: Physical Android device deployment & cold-launch runner.
+    WHAT IT DOES: Installs the freshly signed APK to connected ADB device 'R9ZW105MFDR'
+                 via 'adb install -r' and launches MainActivity cold.
+    WHAT THINGS IT IS LINKED WITH: ADB, Samsung Galaxy A04 (SM-A045F), [TARGET_APK].
+    """
     print("[6/6] Installing on connected device R9ZW105MFDR...")
     res = subprocess.run(['adb', '-s', 'R9ZW105MFDR', 'install', '-r', TARGET_APK], capture_output=True, text=True)
     print("Install output:", res.stdout, res.stderr)
