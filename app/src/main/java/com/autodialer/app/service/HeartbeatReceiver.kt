@@ -13,6 +13,27 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+/**
+ * ================================================================================================
+ * WHAT IS IT:
+ * Periodic background watchdog [BroadcastReceiver] firing every 15 minutes to guarantee that scheduled
+ * campaigns remain active in Android's [AlarmManager] despite aggressive vendor battery optimizers.
+ *
+ * WHAT IT DOES:
+ * 1. Receives recurring `ACTION_HEARTBEAT` pulses.
+ * 2. Uses `goAsync()` and acquires a temporary CPU `PARTIAL_WAKE_LOCK` for up to 10 seconds.
+ * 3. Queries active database campaigns and re-registers any missing or desynchronized alarms with
+ *    [CallSchedulerManager].
+ * 4. Schedules the next 15-minute heartbeat alarm via `scheduleNextHeartbeat()`.
+ *
+ * WHAT THINGS IT IS LINKED WITH:
+ * - Upstream Trigger: Self-scheduled recurring alarm via [AlarmManager.setAndAllowWhileIdle].
+ * - Downstream Subsystems:
+ *   * [com.autodialer.app.data.local.AppDatabase] & [ScheduleRepository]: Queries active schedules.
+ *   * [CallSchedulerManager]: Re-registers alarms.
+ *   * [PowerManager.WakeLock]: Holds CPU awake for async processing.
+ * ================================================================================================
+ */
 class HeartbeatReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -59,8 +80,13 @@ class HeartbeatReceiver : BroadcastReceiver() {
         const val ACTION_HEARTBEAT = "com.autodialer.app.ACTION_HEARTBEAT"
         private const val HEARTBEAT_INTERVAL_MS = 15 * 60 * 1000L // 15 minutes
 
+        /**
+         * Sets an exact wakeable alarm for the next heartbeat watchdog pulse in 15 minutes.
+         *
+         * @param context Application context.
+         */
         fun scheduleNextHeartbeat(context: Context) {
-            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
             val intent = Intent(context, HeartbeatReceiver::class.java).apply {
                 action = ACTION_HEARTBEAT
             }
@@ -71,16 +97,12 @@ class HeartbeatReceiver : BroadcastReceiver() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
-            val triggerTime = System.currentTimeMillis() + HEARTBEAT_INTERVAL_MS
+            val triggerAt = System.currentTimeMillis() + HEARTBEAT_INTERVAL_MS
             try {
-                val alarmClockInfo = AlarmManager.AlarmClockInfo(triggerTime, pendingIntent)
-                alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
+                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
+                Log.d("AutoDialerHeartbeat", "Next watchdog heartbeat scheduled in 15 minutes")
             } catch (e: Exception) {
-                try {
-                    alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
-                } catch (ex: Exception) {
-                    ex.printStackTrace()
-                }
+                Log.e("AutoDialerHeartbeat", "Failed to schedule watchdog heartbeat: ${e.message}")
             }
         }
     }

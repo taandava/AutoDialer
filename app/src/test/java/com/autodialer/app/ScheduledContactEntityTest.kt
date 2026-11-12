@@ -4,6 +4,13 @@ import com.autodialer.app.data.model.ScheduledContactEntity
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
+/**
+ * ================================================================================================
+ * WHAT IS IT: Unit test suite for [com.autodialer.app.data.model.ScheduledContactEntity].
+ * WHAT IT DOES: Verifies contact queue model instantiation, foreign key binding, and queue indices.
+ * WHAT THINGS IT IS LINKED WITH: [com.autodialer.app.data.model.ScheduledContactEntity]
+ * ================================================================================================
+ */
 class ScheduledContactEntityTest {
 
     @Test

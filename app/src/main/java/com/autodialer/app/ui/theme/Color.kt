@@ -2,6 +2,19 @@ package com.autodialer.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
+/**
+ * ================================================================================================
+ * WHAT IS IT:
+ * Design system color token definitions complying with Material 3 Expressive and Brand Orange identity.
+ *
+ * WHAT IT DOES:
+ * Defines hex color constants for primary branding, surface containers, outlines, and semantic states
+ * across light and dark theme modes.
+ *
+ * WHAT THINGS IT IS LINKED WITH:
+ * - Design Theme: [AutoDialerTheme] in `Theme.kt`
+ * ================================================================================================
+ */
 // Brand Orange Identity (Material 3 Expressive)
 val OrangePrimary = Color(0xFFE76F00)
 val OrangePrimaryVariant = Color(0xFFC85E00)

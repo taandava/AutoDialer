@@ -22,6 +22,28 @@ import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
+/**
+ * ================================================================================================
+ * WHAT IS IT:
+ * Transparent, transient [Activity] specifically designed to turn the device display ON and bypass/
+ * dismiss the keyguard lockscreen when a scheduled call campaign fires while the device is asleep.
+ *
+ * WHAT IT DOES:
+ * 1. Configures `setShowWhenLocked(true)` and `setTurnScreenOn(true)` on Android 8.1+ (API 27+).
+ * 2. Requests `KeyguardManager.requestDismissKeyguard()` to unlock the screen.
+ * 3. Acquires a temporary `PARTIAL_WAKE_LOCK` to ensure the CPU does not sleep during dialing.
+ * 4. Resolves the requested SIM card preference via TelecomManager / Intent extras.
+ * 5. Places the outbound call via `TelecomManager.placeCall` or `Intent.ACTION_CALL`.
+ * 6. Finishes immediately after placing the call.
+ *
+ * WHAT THINGS IT IS LINKED WITH:
+ * - Upstream Caller: [ScheduleReceiver] when device keyguard is locked.
+ * - System Frameworks:
+ *   * [TelecomManager]: Outbound call placement.
+ *   * [PowerManager]: Screen wake locks.
+ *   * [android.app.KeyguardManager]: Lockscreen dismissal.
+ * ================================================================================================
+ */
 class WakeAndCallActivity : Activity() {
 
     private val activityScope = CoroutineScope(Dispatchers.Main)
@@ -60,52 +82,54 @@ class WakeAndCallActivity : Activity() {
 
     private fun placeCallAndFinish(phoneNumber: String, simSlot: Int) {
         if (phoneNumber.isBlank()) {
+            AppLogLogger.log("WakeAndCallActivity", "Cannot place call: Phone number is blank. Finishing.")
+            finish()
+            return
+        }
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+            AppLogLogger.log("WakeAndCallActivity", "Permission CALL_PHONE missing. Finishing.")
             finish()
             return
         }
 
         activityScope.launch {
-            delay(300.milliseconds)
             try {
-                val uri = "tel:${Uri.encode(phoneNumber)}".toUri()
-                val telecomManager = getSystemService(Context.TELECOM_SERVICE) as? TelecomManager
-                val hasCallPermission = ContextCompat.checkSelfPermission(this@WakeAndCallActivity, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED
+                delay(800.milliseconds) // Allow screen illumination and window stabilization
 
-                val extras = Bundle()
-                if (telecomManager != null && ContextCompat.checkSelfPermission(this@WakeAndCallActivity, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
+                val telecomManager = getSystemService(Context.TELECOM_SERVICE) as? TelecomManager
+                val uri = "tel:${Uri.encode(phoneNumber)}".toUri()
+
+                val callExtras = AutoDialerService.buildCallExtras(simSlot, this@WakeAndCallActivity)
+
+                var placedSuccessfully = false
+
+                if (telecomManager != null) {
                     try {
-                        val accounts = telecomManager.callCapablePhoneAccounts
-                        if (accounts != null && accounts.size > simSlot) {
-                            extras.putParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE, accounts[simSlot])
-                        }
+                        AppLogLogger.log("WakeAndCallActivity", "Attempting placeCall on TelecomManager (SIM Slot $simSlot)...")
+                        telecomManager.placeCall(uri, callExtras)
+                        placedSuccessfully = true
                     } catch (e: Exception) {
-                        AppLogLogger.log("WakeAndCallActivity", "Error setting PhoneAccountHandle: ${e.message}")
+                        AppLogLogger.log("WakeAndCallActivity", "placeCall failed, attempting ACTION_CALL fallback: ${e.message}")
                     }
                 }
-                extras.putInt("simSlot", simSlot)
-                extras.putInt("slot", simSlot)
-                extras.putInt("com.android.phone.extra.slot", simSlot)
-                extras.putInt("android.telecom.extra.SLOT_INDEX", simSlot)
 
-                if (telecomManager != null && hasCallPermission) {
-                    AppLogLogger.log("WakeAndCallActivity", "Direct TelecomManager.placeCall executed over lockscreen for $phoneNumber (SIM ${simSlot + 1})")
-                    telecomManager.placeCall(uri, extras)
-                } else {
+                if (!placedSuccessfully) {
                     val callIntent = Intent(Intent.ACTION_CALL, uri).apply {
-                        putExtras(extras)
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        putExtras(callExtras)
                     }
                     startActivity(callIntent)
-                    AppLogLogger.log("WakeAndCallActivity", "ACTION_CALL launched over lockscreen for $phoneNumber (SIM ${simSlot + 1})")
+                    AppLogLogger.log("WakeAndCallActivity", "Outbound call placed via ACTION_CALL fallback")
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                AppLogLogger.log("WakeAndCallActivity", "Call placement error over lockscreen: ${e.message}")
+                AppLogLogger.log("WakeAndCallActivity", "Call placement exception: ${e.message}")
+            } finally {
+                delay(1.seconds)
+                finish()
             }
-
-            delay(2.seconds)
-            finish()
         }
     }
 

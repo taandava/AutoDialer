@@ -16,6 +16,23 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/**
+ * ================================================================================================
+ * WHAT IS IT:
+ * Architecture ViewModel providing reactive call history streams and CSV export functionality
+ * for the Call Ledger / History dashboard.
+ *
+ * WHAT IT DOES:
+ * 1. Observes `callLogDao.getAllCallLogs()` and exposes an asynchronous [StateFlow] of [CallLogEntity] items.
+ * 2. Clears all call history from Room database in [clearAllLogs].
+ * 3. Serializes call history records to RFC 4180-compliant CSV text and writes to a SAF destination in [exportLedgerToCsv].
+ *
+ * WHAT THINGS IT IS LINKED WITH:
+ * - UI Screen: [CallLedgerScreen]
+ * - Database DAO: [com.autodialer.app.data.local.CallLogDao]
+ * - Application Host: [com.autodialer.app.AutoDialerApplication]
+ * ================================================================================================
+ */
 class CallLedgerViewModel : ViewModel() {
 
     private val db = AutoDialerApplication.instance.database

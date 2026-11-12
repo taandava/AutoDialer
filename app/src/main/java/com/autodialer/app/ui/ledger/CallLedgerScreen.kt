@@ -32,6 +32,24 @@ import com.autodialer.app.ui.theme.SuccessGreen
 import java.text.SimpleDateFormat
 import java.util.*
 
+/**
+ * ================================================================================================
+ * WHAT IS IT:
+ * The Call Ledger & Analytics dashboard Composable displaying comprehensive historical call logs,
+ * executive metrics, and outcome distribution chips.
+ *
+ * WHAT IT DOES:
+ * 1. Renders executive summary cards (Total Calls, Connected Calls, Cumulative Talk Time).
+ * 2. Provides interactive filter chips (All, Connected, Missed, Busy, Rejected).
+ * 3. Displays lazy-loaded list of individual call logs with SIM badge, duration, and status indicators.
+ * 4. Provides 1-tap CSV export via Storage Access Framework (`CreateDocument`) launcher.
+ * 5. Provides confirmation dialog for clearing call history.
+ *
+ * WHAT THINGS IT IS LINKED WITH:
+ * - ViewModel: [CallLedgerViewModel]
+ * - Parent Navigation: [com.autodialer.app.ui.main.MainScreen]
+ * ================================================================================================
+ */
 @Composable
 @Suppress("FunctionName")
 fun CallLedgerScreen(

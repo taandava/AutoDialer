@@ -42,6 +42,25 @@ import com.autodialer.app.ui.instant.NumberStepper
 import java.text.SimpleDateFormat
 import java.util.*
 
+/**
+ * ================================================================================================
+ * WHAT IS IT:
+ * Full-featured campaign authoring and editing form Composable for creating or updating scheduled campaigns.
+ *
+ * WHAT IT DOES:
+ * 1. Configures campaign title, start date, and execution time using Material 3 DatePickerDialog and TimePickerDialog.
+ * 2. Selects repeat recurrence rule (Once, Hourly, Daily, Weekly, Monthly, Custom Interval in seconds or minutes).
+ * 3. Manages queued contact list with manual add, system contact picker, CSV file import, and individual deletion.
+ * 4. Configures hardware parameters: SIM slot choice, auto-speakerphone, duration limits, and inter-call delays.
+ * 5. Commits campaign and queued contacts atomically into Room database via [ScheduleRepository.saveSchedule].
+ * 6. Schedules exact system wakeup alarm via [CallSchedulerManager.scheduleAlarm].
+ *
+ * WHAT THINGS IT IS LINKED WITH:
+ * - Parent Navigation: [com.autodialer.app.ui.main.MainScreen]
+ * - Repositories: [com.autodialer.app.data.repository.ScheduleRepository], [com.autodialer.app.data.repository.CsvRepository]
+ * - Hardware Engine: [com.autodialer.app.service.CallSchedulerManager]
+ * ================================================================================================
+ */
 @Composable
 @Suppress("FunctionName")
 fun AddEditScheduleScreen(

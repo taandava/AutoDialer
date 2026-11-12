@@ -63,6 +63,21 @@ private val LightColorScheme = lightColorScheme(
     onError = Color.White
 )
 
+/**
+ * ================================================================================================
+ * WHAT IS IT:
+ * Root Material 3 theme Composable providing color schemes, shapes, and typography across the app.
+ *
+ * WHAT IT DOES:
+ * 1. Resolves dynamic color schemes on Android 12+ (API 31+) if enabled.
+ * 2. Provides custom Brand Orange [DarkColorScheme] and [LightColorScheme].
+ * 3. Binds MaterialTheme composable down the tree.
+ *
+ * WHAT THINGS IT IS LINKED WITH:
+ * - Host Activity: [com.autodialer.app.MainActivity]
+ * - Tokens: `Color.kt`
+ * ================================================================================================
+ */
 @Composable
 @Suppress("FunctionName")
 fun AutoDialerTheme(

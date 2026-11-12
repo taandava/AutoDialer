@@ -27,6 +27,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
+/**
+ * ================================================================================================
+ * WHAT IS IT:
+ * Custom numeric increment/decrement stepper Composable with direct manual text-editing support.
+ *
+ * WHAT IT DOES:
+ * Provides minus and plus button controls alongside an editable BasicTextField with numeric-only
+ * filtering, clamping input values strictly between [minValue] and [maxValue].
+ *
+ * WHAT THINGS IT IS LINKED WITH:
+ * - Direct Consumer: [InstantDialerScreen] and [com.autodialer.app.ui.schedule.AddEditScheduleScreen].
+ * ================================================================================================
+ */
 @Composable
 @Suppress("FunctionName")
 fun NumberStepper(
@@ -95,6 +108,24 @@ fun NumberStepper(
     }
 }
 
+/**
+ * ================================================================================================
+ * WHAT IS IT:
+ * The primary dashboard screen Composable for on-demand instant auto-dialing campaigns.
+ *
+ * WHAT IT DOES:
+ * 1. Hosts the phone number entry field with bulk input parsing indicators and a system contact picker trigger.
+ * 2. Displays SIM card selection chips (SIM 1 / SIM 2) with hardware detection.
+ * 3. Provides controls for inter-call delays, repetitions per number, and duration limit auto-hangup.
+ * 4. Toggles speakerphone on/off for outbound calls.
+ * 5. Displays a dynamic full-width action button switching between green START DIALING and red STOP DIALING.
+ *
+ * WHAT THINGS IT IS LINKED WITH:
+ * - ViewModel: [InstantDialerViewModel]
+ * - Parent Navigation: [com.autodialer.app.ui.main.MainScreen]
+ * - Subsystems: [com.autodialer.app.service.AutoDialerService] via ViewModel
+ * ================================================================================================
+ */
 @Composable
 @Suppress("FunctionName")
 fun InstantDialerScreen(

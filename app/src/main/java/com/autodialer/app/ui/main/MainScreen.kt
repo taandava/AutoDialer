@@ -44,6 +44,29 @@ sealed class Screen(val route: String, val title: String, val icon: @Composable 
     object PermissionManager : Screen("permissions", "Permissions", { Icon(Icons.Default.Security, contentDescription = null) })
 }
 
+/**
+ * ================================================================================================
+ * WHAT IS IT:
+ * Primary scaffold and navigation coordinator Composable hosting the application's bottom navigation
+ * bar and Jetpack Compose [NavHost].
+ *
+ * WHAT IT DOES:
+ * 1. Hosts the persistent bottom navigation bar routing between core application destinations:
+ *    - [Screen.Instant]: Instant auto-dialer dashboard.
+ *    - [Screen.Schedules]: Campaign schedule management list.
+ *    - [Screen.CallLedger]: Historical call ledger and executive analytics.
+ *    - [Screen.Settings]: Audio, SIM, theme, and diagnostic settings.
+ * 2. Handles child navigation routes ([Screen.AddEditSchedule], [Screen.PermissionManager]).
+ * 3. Integrates system contact picker Activity Result Launcher (`PickContact`).
+ * 4. Manages software keyboard dismissal and focus clearing across tab switches.
+ *
+ * WHAT THINGS IT IS LINKED WITH:
+ * - Host Activity: [com.autodialer.app.MainActivity]
+ * - ViewModels: [com.autodialer.app.ui.instant.InstantDialerViewModel], [com.autodialer.app.ui.settings.SettingsViewModel]
+ * - Destinations: [InstantDialerScreen], [ScheduleListScreen], [CallLedgerScreen], [SettingsScreen],
+ *   [AddEditScheduleScreen], [PermissionManagerScreen]
+ * ================================================================================================
+ */
 @Composable
 @Suppress("FunctionName")
 fun MainScreen(

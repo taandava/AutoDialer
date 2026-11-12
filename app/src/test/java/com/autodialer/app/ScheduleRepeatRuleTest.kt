@@ -8,6 +8,14 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.Calendar
 
+/**
+ * ================================================================================================
+ * WHAT IS IT: Unit test suite for [com.autodialer.app.data.model.ScheduleRepeatRule] and calculations.
+ * WHAT IT DOES: Tests calendar recurrence calculations (Hourly, Daily, Weekly, Monthly, Custom) and
+ *               past-timestamp fast-forwarding logic in [CallSchedulerManager.calculateNextRunTime].
+ * WHAT THINGS IT IS LINKED WITH: [com.autodialer.app.service.CallSchedulerManager]
+ * ================================================================================================
+ */
 class ScheduleRepeatRuleTest {
 
     @Test

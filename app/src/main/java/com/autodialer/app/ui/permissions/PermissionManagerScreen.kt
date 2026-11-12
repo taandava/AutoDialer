@@ -27,6 +27,27 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 
+/**
+ * ================================================================================================
+ * WHAT IS IT:
+ * Dedicated runtime permissions and system policy management Composable screen.
+ *
+ * WHAT IT DOES:
+ * 1. Audits and displays live authorization status for required capabilities:
+ *    - Phone Calls (`Manifest.permission.CALL_PHONE`)
+ *    - Phone State (`Manifest.permission.READ_PHONE_STATE`)
+ *    - Answer Phone Calls (`Manifest.permission.ANSWER_PHONE_CALLS`)
+ *    - Read Contacts (`Manifest.permission.READ_CONTACTS`)
+ *    - Notifications (`Manifest.permission.POST_NOTIFICATIONS` on Android 13+)
+ *    - Exact Alarms (`AlarmManager.canScheduleExactAlarms()` on Android 12+)
+ *    - Battery Optimization Exemption (`PowerManager.isIgnoringBatteryOptimizations()`)
+ * 2. Provides direct action buttons to request individual permissions or open system Settings screens.
+ *
+ * WHAT THINGS IT IS LINKED WITH:
+ * - Parent Navigation: [com.autodialer.app.ui.main.MainScreen]
+ * - System Services: [android.app.AlarmManager], [android.os.PowerManager]
+ * ================================================================================================
+ */
 @Composable
 @Suppress("FunctionName")
 fun PermissionManagerScreen(

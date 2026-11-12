@@ -11,10 +11,41 @@ import com.autodialer.app.data.model.CallScheduleEntity
 import com.autodialer.app.data.model.ScheduleRepeatRule
 import java.util.Calendar
 
+/**
+ * ================================================================================================
+ * WHAT IS IT:
+ * Hardware and OS scheduling engine responsible for setting, updating, and cancelling exact alarms
+ * via Android's [AlarmManager] to trigger automated calling campaigns at exact times.
+ *
+ * WHAT IT DOES:
+ * 1. Coordinates with [AlarmManager.setAlarmClock] as primary tier to guarantee wakeups even under
+ *    aggressive OEM power-saving modes (Samsung, Xiaomi, Huawei Doze).
+ * 2. Provides [AlarmManager.setExactAndAllowWhileIdle] as a robust fallback.
+ * 3. Builds immutable [PendingIntent] targets directing to [ScheduleReceiver].
+ * 4. Cancels active alarms when schedules are disabled, completed, or deleted.
+ * 5. Contains pure static calculation logic in [calculateNextRunTime] for calculating calendar
+ *    recurrences (Hourly, Daily, Weekly, Monthly, and custom intervals) with past-time fast-forwarding.
+ *
+ * WHAT THINGS IT IS LINKED WITH:
+ * - System Framework: [AlarmManager]
+ * - Destination Target: [ScheduleReceiver] (`ACTION_TRIGGER_SCHEDULE`)
+ * - Data Model: [CallScheduleEntity], [ScheduleRepeatRule]
+ * - Direct Callers:
+ *   * [com.autodialer.app.ui.schedule.ScheduleViewModel]: Schedules alarms on create/toggle.
+ *   * [com.autodialer.app.service.ScheduleReceiver]: Reschedules recurring alarms after trigger.
+ *   * [com.autodialer.app.service.HeartbeatReceiver]: Periodically validates active alarms.
+ *   * [com.autodialer.app.AutoDialerApplication]: Singleton owner.
+ * ================================================================================================
+ */
 class CallSchedulerManager(private val context: Context) {
 
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
+    /**
+     * Schedules an exact system alarm for the provided campaign entity.
+     *
+     * @param schedule The campaign configuration entity containing next run time.
+     */
     fun scheduleAlarm(schedule: CallScheduleEntity) {
         if (!schedule.isEnabled || schedule.isCompleted) {
             AppLogLogger.log("CallSchedulerManager", "Schedule ${schedule.id} disabled or completed. Cancelling alarm.")
@@ -60,6 +91,11 @@ class CallSchedulerManager(private val context: Context) {
         }
     }
 
+    /**
+     * Cancels any pending AlarmManager wakeups for the specified campaign ID.
+     *
+     * @param scheduleId Unique ID of the campaign to cancel.
+     */
     fun cancelAlarm(scheduleId: Long) {
         AppLogLogger.log("CallSchedulerManager", "Cancelling alarm for schedule ID=$scheduleId")
         val intent = Intent(context, ScheduleReceiver::class.java).apply {
@@ -78,6 +114,15 @@ class CallSchedulerManager(private val context: Context) {
     }
 
     companion object {
+        /**
+         * Pure mathematical and calendar function calculating the next recurrence timestamp.
+         *
+         * @param currentRunTimeMs Base timestamp from which to advance.
+         * @param repeatRule Frequency type (Once, Hourly, Daily, Weekly, Monthly, Repeat Interval).
+         * @param customIntervalSeconds Interval magnitude in seconds for custom interval rule.
+         * @param enforceFutureTime When true, fast-forwards through any cycles that have already passed.
+         * @return Pair containing the next timestamp in epoch ms and a boolean indicating if campaign is complete.
+         */
         fun calculateNextRunTime(
             currentRunTimeMs: Long,
             repeatRule: ScheduleRepeatRule,

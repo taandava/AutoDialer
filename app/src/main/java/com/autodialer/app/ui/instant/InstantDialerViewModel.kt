@@ -9,6 +9,29 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+/**
+ * ================================================================================================
+ * WHAT IS IT:
+ * Architecture ViewModel managing user input state, validation, parsing, and service lifecycle
+ * for the Instant Auto Dialer screen.
+ *
+ * WHAT IT DOES:
+ * 1. Maintains reactive state flows for target phone numbers, SIM slot selection, delay intervals,
+ *    repetition counts, call duration limits, speakerphone routing, and dialing time inclusion.
+ * 2. Parses comma, newline, and semicolon separated raw strings into normalized telephone numbers
+ *    in [getParsedNumbers].
+ * 3. Enforces boundary constraints (clamping intervals to 1-3600s, repetitions up to 1,00,000,
+ *    duration limits to 1-3600s).
+ * 4. Launches [AutoDialerService] via `startForegroundService` to begin automated calling campaigns.
+ * 5. Sends `ACTION_STOP_DIALING` intent to immediately abort running campaigns.
+ *
+ * WHAT THINGS IT IS LINKED WITH:
+ * - UI Screen: [InstantDialerScreen]
+ * - Background Service: [AutoDialerService]
+ * - Local Preferences: [com.autodialer.app.data.local.PreferencesManager]
+ * - Application Host: [com.autodialer.app.MainActivity]
+ * ================================================================================================
+ */
 class InstantDialerViewModel : ViewModel() {
 
     private val prefs = AutoDialerApplication.instance.preferencesManager
@@ -34,6 +57,10 @@ class InstantDialerViewModel : ViewModel() {
     private val _isSpeakerphoneEnabled = MutableStateFlow(prefs.defaultSpeakerphoneEnabled)
     val isSpeakerphoneEnabled: StateFlow<Boolean> = _isSpeakerphoneEnabled.asStateFlow()
 
+    /**
+     * Observes the live service status emitted by [AutoDialerService.dialStateFlow] (e.g. 'Idle',
+     * 'Dialing 1/3 (Rep 1/2)', 'Waiting 3s').
+     */
     val dialerState: StateFlow<String> = AutoDialerService.dialStateFlow
 
     fun setPhoneNumber(number: String) {
@@ -73,6 +100,10 @@ class InstantDialerViewModel : ViewModel() {
         _isSpeakerphoneEnabled.value = !_isSpeakerphoneEnabled.value
     }
 
+    /**
+     * Splits and sanitizes the user's raw phone number input by commas, newlines, and semicolons,
+     * stripping non-digit / non-plus characters and filtering out strings shorter than 3 digits.
+     */
     fun getParsedNumbers(): List<String> {
         val raw = _phoneNumber.value
         return raw.split(',', '\n', ';')
@@ -82,6 +113,9 @@ class InstantDialerViewModel : ViewModel() {
             .filter { it.length >= 3 }
     }
 
+    /**
+     * Assembles all user-defined parameters into an Intent bundle and starts [AutoDialerService].
+     */
     fun startDialing(context: Context) {
         val numbers = getParsedNumbers()
         if (numbers.isEmpty()) return
@@ -99,6 +133,9 @@ class InstantDialerViewModel : ViewModel() {
         context.startForegroundService(intent)
     }
 
+    /**
+     * Sends an action intent requesting [AutoDialerService] to abort the active campaign immediately.
+     */
     fun stopDialing(context: Context) {
         val intent = Intent(context, AutoDialerService::class.java).apply {
             action = AutoDialerService.ACTION_STOP_DIALING

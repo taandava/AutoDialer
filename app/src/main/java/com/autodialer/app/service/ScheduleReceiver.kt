@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.PowerManager
+import androidx.core.content.ContextCompat
 import com.autodialer.app.data.local.AppDatabase
 import com.autodialer.app.data.local.AppLogLogger
 import com.autodialer.app.data.model.ScheduleRepeatRule
@@ -14,6 +15,31 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+/**
+ * ================================================================================================
+ * WHAT IS IT:
+ * Core broadcast entry point handling system alarm triggers (`ACTION_TRIGGER_SCHEDULE`) and device
+ * boot events (`Intent.ACTION_BOOT_COMPLETED`).
+ *
+ * WHAT IT DOES:
+ * 1. Reschedules all active database campaigns when the device finishes rebooting (`BOOT_COMPLETED`).
+ * 2. When a scheduled alarm fires:
+ *    - Acquires a CPU wake lock for 15 seconds.
+ *    - Fetches the campaign and its queued contacts from Room database.
+ *    - Calculates and commits the next recurrence cycle via [CallSchedulerManager.calculateNextRunTime].
+ *    - If device is locked, launches [WakeAndCallActivity] to turn the screen on and bypass keyguard.
+ *    - Otherwise, starts [AutoDialerService] as a Foreground Service to execute the call sequence.
+ *
+ * WHAT THINGS IT IS LINKED WITH:
+ * - Upstream Triggers:
+ *   * [android.content.Intent.ACTION_BOOT_COMPLETED]: System boot completion.
+ *   * [ACTION_TRIGGER_SCHEDULE]: [CallSchedulerManager] exact alarms.
+ * - Downstream Executors:
+ *   * [WakeAndCallActivity]: Lockscreen wakeup activity.
+ *   * [AutoDialerService]: Foreground dialing service.
+ *   * [ScheduleRepository]: Campaign updates in Room database.
+ * ================================================================================================
+ */
 class ScheduleReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -64,33 +90,44 @@ class ScheduleReceiver : BroadcastReceiver() {
                                 )
 
                                 repository.updateNextRunTime(scheduleId, nextRunMs, isCompleted)
+
                                 if (!isCompleted) {
-                                    scheduler.scheduleAlarm(schedule.copy(nextRunTimeEpochMs = nextRunMs))
+                                    val updatedSchedule = schedule.copy(
+                                        nextRunTimeEpochMs = nextRunMs,
+                                        isCompleted = false
+                                    )
+                                    scheduler.scheduleAlarm(updatedSchedule)
                                 }
 
-                                val serviceIntent = Intent(context, AutoDialerService::class.java).apply {
-                                    putExtra(AutoDialerService.EXTRA_SCHEDULE_ID, scheduleId)
-                                }
+                                val keyguardManager = context.getSystemService(Context.KEYGUARD_SERVICE) as? android.app.KeyguardManager
+                                val isLocked = keyguardManager?.isKeyguardLocked ?: false
 
-                                AppLogLogger.log("ScheduleReceiver", "Starting AutoDialerService for schedule ID=$scheduleId")
-                                context.startForegroundService(serviceIntent)
+                                if (isLocked && scheduleWithContacts.contacts.isNotEmpty()) {
+                                    AppLogLogger.log("ScheduleReceiver", "Device locked. Launching WakeAndCallActivity.")
+                                    val wakeIntent = Intent(context, WakeAndCallActivity::class.java).apply {
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                                        putExtra(WakeAndCallActivity.EXTRA_PHONE_NUMBER, scheduleWithContacts.contacts.first().phoneNumber)
+                                        putExtra(WakeAndCallActivity.EXTRA_SIM_SLOT, schedule.simSlot)
+                                    }
+                                    context.startActivity(wakeIntent)
+                                } else {
+                                    AppLogLogger.log("ScheduleReceiver", "Starting AutoDialerService for schedule ID=$scheduleId")
+                                    val serviceIntent = Intent(context, AutoDialerService::class.java).apply {
+                                        putExtra(AutoDialerService.EXTRA_SCHEDULE_ID, scheduleId)
+                                    }
+                                    ContextCompat.startForegroundService(context, serviceIntent)
+                                }
                             }
-                        } else {
-                            AppLogLogger.log("ScheduleReceiver", "Schedule ID=$scheduleId not found in database!")
                         }
                     }
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                AppLogLogger.log("ScheduleReceiver", "Error processing ScheduleReceiver: ${e.message}")
+                AppLogLogger.log("ScheduleReceiver", "Exception in ScheduleReceiver: ${e.message}")
             } finally {
                 if (wakeLock.isHeld) {
-                    try {
-                        wakeLock.release()
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
+                    try { wakeLock.release() } catch (e: Exception) { e.printStackTrace() }
                 }
                 pendingResult.finish()
             }

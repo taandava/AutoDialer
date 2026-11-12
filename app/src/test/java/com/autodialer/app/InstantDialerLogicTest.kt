@@ -4,6 +4,13 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+/**
+ * ================================================================================================
+ * WHAT IS IT: Unit test suite for instant auto-dialer business logic.
+ * WHAT IT DOES: Verifies bulk phone number delimiter parsing, repetition/interval clamping, and validation.
+ * WHAT THINGS IT IS LINKED WITH: [com.autodialer.app.ui.instant.InstantDialerViewModel]
+ * ================================================================================================
+ */
 class InstantDialerLogicTest {
 
     @Test

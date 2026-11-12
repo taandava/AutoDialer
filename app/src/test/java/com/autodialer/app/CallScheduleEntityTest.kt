@@ -6,6 +6,13 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+/**
+ * ================================================================================================
+ * WHAT IS IT: Unit test suite for [com.autodialer.app.data.model.CallScheduleEntity].
+ * WHAT IT DOES: Verifies campaign entity creation, default timing rules, and repeat configurations.
+ * WHAT THINGS IT IS LINKED WITH: [com.autodialer.app.data.model.CallScheduleEntity]
+ * ================================================================================================
+ */
 class CallScheduleEntityTest {
 
     @Test

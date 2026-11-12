@@ -23,6 +23,25 @@ import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.autodialer.app.data.local.AppLogLogger
 
+/**
+ * ================================================================================================
+ * WHAT IS IT:
+ * Application Settings and Developer Diagnostics Composable screen.
+ *
+ * WHAT IT DOES:
+ * 1. Provides hardware SIM card preference selector (SIM 1 / SIM 2).
+ * 2. Toggles default auto-speakerphone activation.
+ * 3. Toggles application Dark/Light theme mode with immediate visual feedback.
+ * 4. Navigates to the Permission Manager screen.
+ * 5. Embeds a live developer diagnostics log console observing [AppLogLogger.logsState] with a clear logs button.
+ * 6. Displays application version and GitHub repository link.
+ *
+ * WHAT THINGS IT IS LINKED WITH:
+ * - ViewModel: [SettingsViewModel]
+ * - Parent Navigation: [com.autodialer.app.ui.main.MainScreen]
+ * - Diagnostics: [com.autodialer.app.data.local.AppLogLogger]
+ * ================================================================================================
+ */
 @Composable
 @Suppress("FunctionName")
 fun SettingsScreen(

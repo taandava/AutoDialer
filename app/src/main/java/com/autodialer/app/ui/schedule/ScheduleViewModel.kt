@@ -13,6 +13,23 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+/**
+ * ================================================================================================
+ * WHAT IS IT:
+ * Architecture ViewModel managing scheduled campaign lists, alarm toggling, and campaign deletion.
+ *
+ * WHAT IT DOES:
+ * 1. Observes `scheduleRepository.allSchedules` and exposes a reactive [StateFlow] of [ScheduleWithContacts].
+ * 2. Implements [toggleSchedule] which flips campaign enabled status, resets past run times, updates
+ *    the schedule record without wiping child contacts, and registers/cancels alarms via [CallSchedulerManager].
+ * 3. Handles [deleteSchedule] by cancelling system alarms and cascading deletion in Room.
+ *
+ * WHAT THINGS IT IS LINKED WITH:
+ * - UI Screens: [ScheduleListScreen], [AddEditScheduleScreen]
+ * - Repositories: [com.autodialer.app.data.repository.ScheduleRepository], [com.autodialer.app.data.repository.CsvRepository]
+ * - Scheduler: [com.autodialer.app.service.CallSchedulerManager]
+ * ================================================================================================
+ */
 class ScheduleViewModel : ViewModel() {
 
     private val repository = AutoDialerApplication.instance.scheduleRepository

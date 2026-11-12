@@ -5,6 +5,13 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+/**
+ * ================================================================================================
+ * WHAT IS IT: Unit test suite for CSV edge cases.
+ * WHAT IT DOES: Tests empty inputs, malformed lines, whitespace-heavy rows, and unusual delimiters.
+ * WHAT THINGS IT IS LINKED WITH: [com.autodialer.app.data.repository.CsvRepository]
+ * ================================================================================================
+ */
 class CsvRepositoryEdgeCasesTest {
 
     @Test

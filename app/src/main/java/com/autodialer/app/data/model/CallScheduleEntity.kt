@@ -3,6 +3,30 @@ package com.autodialer.app.data.model
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
+/**
+ * ================================================================================================
+ * WHAT IS IT:
+ * Room entity representing a scheduled calling campaign stored in the `call_schedules` table.
+ *
+ * WHAT IT DOES:
+ * 1. Stores campaign identification (title, creation timestamp, ID).
+ * 2. Encapsulates scheduling timestamps (initial scheduled date/time and next execution epoch).
+ * 3. Configures repeat policies using [ScheduleRepeatRule] (Once, Hourly, Daily, Weekly, Monthly,
+ *    Custom Interval in seconds or minutes).
+ * 4. Defines calling parameters (inter-call delay, retries per number, duration limits, SIM slot,
+ *    speakerphone routing, and dialing time inclusion).
+ * 5. Maintains runtime execution state flags (`isEnabled`, `isCompleted`).
+ *
+ * WHAT THINGS IT IS LINKED WITH:
+ * - Table: `call_schedules`
+ * - 1-to-Many Child: [ScheduledContactEntity] (bound via foreign key `scheduleId`).
+ * - Relationship Container: [ScheduleWithContacts]
+ * - DAOs & Services:
+ *   * [com.autodialer.app.data.local.ScheduleDao]
+ *   * [com.autodialer.app.service.CallSchedulerManager]: Calculates next alarm time.
+ *   * [com.autodialer.app.service.AutoDialerService]: Executes campaign call queues.
+ * ================================================================================================
+ */
 @Entity(tableName = "call_schedules")
 data class CallScheduleEntity(
     @PrimaryKey(autoGenerate = true)

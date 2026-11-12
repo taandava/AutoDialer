@@ -41,6 +41,36 @@ import kotlinx.coroutines.withContext
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
+/**
+ * ================================================================================================
+ * WHAT IS IT:
+ * Core Foreground Service driving the automated outbound calling engine for both Instant Dialing
+ * and Scheduled Campaign executions.
+ *
+ * WHAT IT DOES:
+ * 1. Elevates process priority via [startForeground] with phone-call / special-use foreground service types.
+ * 2. Drives the sequential dialing loop through coroutines:
+ *    - Resolves multi-SIM hardware indices and builds OEM telephony bundles via [buildCallExtras].
+ *    - Dispatches outbound calls through [TelecomManager.placeCall] or [Intent.ACTION_CALL].
+ *    - Listens to real-time call states from [AppInCallService] via a local broadcast receiver.
+ *    - Enforces duration limits, countdown intervals between calls, and retry repetitions.
+ *    - Logs call attempts, talk durations, and disconnect causes into Room database (call_logs).
+ * 3. Displays an ongoing sticky notification with a live 'STOP' action button.
+ * 4. Exposes [dialStateFlow] to broadcast real-time dialing progress (e.g. 'Dialing 1/5', 'Waiting 3s', 'Idle')
+ *    directly to the UI.
+ *
+ * WHAT THINGS IT IS LINKED WITH:
+ * - Upstream Starters:
+ *   * [com.autodialer.app.ui.instant.InstantDialerViewModel]: Instant dialing requests.
+ *   * [ScheduleReceiver]: Scheduled campaign trigger.
+ * - Telecom & Telephony:
+ *   * [AppInCallService]: InCallService callbacks and multi-tier disconnects.
+ *   * [TelecomManager]: Outbound call placement.
+ * - Database & Persistence:
+ *   * [com.autodialer.app.data.local.AppDatabase] & [com.autodialer.app.data.local.CallLogDao]: Call log persistence.
+ *   * [com.autodialer.app.data.repository.ScheduleRepository]: Campaign contact updates.
+ * ================================================================================================
+ */
 class AutoDialerService : Service() {
 
     private val serviceJob = Job()
@@ -333,28 +363,10 @@ class AutoDialerService : Service() {
         stopAutoDialer()
     }
 
-    private fun buildCallExtras(simSlot: Int): Bundle {
-        val extras = Bundle()
-        try {
-            val telecomManager = getSystemService(Context.TELECOM_SERVICE) as? TelecomManager
-            if (telecomManager != null && ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
-                val accounts = telecomManager.callCapablePhoneAccounts
-                if (accounts != null && accounts.size > simSlot) {
-                    extras.putParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE, accounts[simSlot])
-                }
-            }
-        } catch (e: Exception) {
-            AppLogLogger.log("AutoDialerService", "Error resolving PhoneAccountHandle: ${e.message}")
-        }
-        extras.putInt("simSlot", simSlot)
-        extras.putInt("slot", simSlot)
-        extras.putInt("com.android.phone.extra.slot", simSlot)
-        extras.putInt("android.telecom.extra.SLOT_INDEX", simSlot)
-        return extras
-    }
+
 
     private fun placeCall(phoneNumber: String, simSlot: Int) {
-        val extras = buildCallExtras(simSlot)
+        val extras = buildCallExtras(simSlot, this)
         try {
             val uri = "tel:${Uri.encode(phoneNumber)}".toUri()
             val telecomManager = getSystemService(Context.TELECOM_SERVICE) as? TelecomManager
@@ -518,5 +530,29 @@ class AutoDialerService : Service() {
 
         private val _dialStateFlow = MutableStateFlow("Idle")
         val dialStateFlow: StateFlow<String> = _dialStateFlow
+
+        /**
+         * Resolves the Telecom PhoneAccountHandle for the chosen SIM card and populates
+         * manufacturer-specific slot index intent extras across devices.
+         */
+        fun buildCallExtras(simSlot: Int, context: Context): Bundle {
+            val extras = Bundle()
+            try {
+                val telecomManager = context.getSystemService(Context.TELECOM_SERVICE) as? TelecomManager
+                if (telecomManager != null && ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
+                    val accounts = telecomManager.callCapablePhoneAccounts
+                    if (accounts != null && accounts.size > simSlot) {
+                        extras.putParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE, accounts[simSlot])
+                    }
+                }
+            } catch (e: Exception) {
+                AppLogLogger.log("AutoDialerService", "Error resolving PhoneAccountHandle: ${e.message}")
+            }
+            extras.putInt("simSlot", simSlot)
+            extras.putInt("slot", simSlot)
+            extras.putInt("com.android.phone.extra.slot", simSlot)
+            extras.putInt("android.telecom.extra.SLOT_INDEX", simSlot)
+            return extras
+        }
     }
 }

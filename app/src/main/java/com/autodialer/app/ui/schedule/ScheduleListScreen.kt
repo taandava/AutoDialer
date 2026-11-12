@@ -26,6 +26,23 @@ import com.autodialer.app.data.model.ScheduleWithContacts
 import java.text.SimpleDateFormat
 import java.util.*
 
+/**
+ * ================================================================================================
+ * WHAT IS IT:
+ * List screen Composable presenting all configured automated calling campaigns and their statuses.
+ *
+ * WHAT IT DOES:
+ * 1. Displays cards for each campaign showing title, recurrence frequency, next scheduled run time,
+ *    contact count, duration limit, and SIM preference.
+ * 2. Provides active/inactive toggle switch for each campaign.
+ * 3. Provides edit and delete actions with confirmation dialog.
+ * 4. Shows an empty state illustration with an 'Add First Schedule' call-to-action button when no campaigns exist.
+ *
+ * WHAT THINGS IT IS LINKED WITH:
+ * - ViewModel: [ScheduleViewModel]
+ * - Parent Navigation: [com.autodialer.app.ui.main.MainScreen]
+ * ================================================================================================
+ */
 @Composable
 @Suppress("FunctionName")
 fun ScheduleListScreen(

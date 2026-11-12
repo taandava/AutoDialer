@@ -8,8 +8,36 @@ import java.io.BufferedWriter
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 
+/**
+ * ================================================================================================
+ * WHAT IS IT:
+ * Dedicated repository and I/O utility responsible for importing, parsing, normalizing, and exporting
+ * CSV contact lists for campaign execution.
+ *
+ * WHAT IT DOES:
+ * 1. Reads CSV data from storage Uris via Android's [ContentResolver].
+ * 2. Implements RFC 4180-compliant CSV line parsing supporting escaped quotes (`""`) and commas
+ *    within quotes.
+ * 3. Employs intelligent header detection (matching "phone", "mobile", "tel", "name", "contact")
+ *    and fallback heuristics to identify phone number and name columns automatically.
+ * 4. Normalizes telephone numbers by stripping non-digit and non-plus characters.
+ * 5. Exports contact queues to standard CSV format with quotation escaping.
+ *
+ * WHAT THINGS IT IS LINKED WITH:
+ * - Direct Callers:
+ *   * [com.autodialer.app.ui.schedule.AddEditScheduleScreen]: Imports CSV files into campaign queue.
+ *   * [com.autodialer.app.AutoDialerApplication]: Singleton repository owner.
+ * ================================================================================================
+ */
 class CsvRepository(private val contentResolver: ContentResolver) {
 
+    /**
+     * Parses a CSV file from a [Uri] into a clean list of [ScheduledContactEntity] objects.
+     *
+     * @param uri The document or content Uri picked by the user.
+     * @param scheduleId Optional schedule ID to associate imported contacts with.
+     * @return List of parsed and validated contacts.
+     */
     fun importContactsFromCsv(uri: Uri, scheduleId: Long = 0): List<ScheduledContactEntity> {
         val contacts = mutableListOf<ScheduledContactEntity>()
         try {
@@ -95,6 +123,13 @@ class CsvRepository(private val contentResolver: ContentResolver) {
         return contacts
     }
 
+    /**
+     * Serializes a list of [ScheduledContactEntity] records to an output stream as CSV text.
+     *
+     * @param uri The destination Uri selected via SAF (Storage Access Framework).
+     * @param contacts The list of contacts to serialize.
+     * @return True if write succeeded, false on error.
+     */
     fun exportContactsToCsv(uri: Uri, contacts: List<ScheduledContactEntity>): Boolean {
         return try {
             contentResolver.openOutputStream(uri)?.use { outputStream ->
@@ -114,6 +149,12 @@ class CsvRepository(private val contentResolver: ContentResolver) {
     }
 
     companion object {
+        /**
+         * Parses a single CSV line into tokens, respecting quotes and double-quote escape sequences.
+         *
+         * @param line Raw line text from CSV file.
+         * @return Tokenized list of string values.
+         */
         fun parseCsvLine(line: String): List<String> {
             val tokens = mutableListOf<String>()
             val sb = java.lang.StringBuilder()

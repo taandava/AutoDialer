@@ -2,6 +2,17 @@
 
 All notable changes to the **Auto Dialer** project are documented in this file.
 
+## [1.3.0] - 2026-11-12
+
+### Added
+- **Embedded Self-Contained Codebase in Release APK:** Configured automated packaging (`package_codebase_to_apk.py` & `package_codebase.bat`) to bundle the complete, buildable Android Studio project source tree directly into the APK under `codebase/` and `assets/codebase/`. Extracting the APK with any zip utility provides instant access to all source files, Gradle scripts, resources, and tests for portable app updates.
+- **Architectural KDoc Documentation Across All Codeblocks:** Comprehensive, professional KDoc headers and block comments added to every class, entity, DAO, repository, service, receiver, ViewModel, and Composable detailing identity (What is it), behavior (What it does), and system/subsystem links (What it is linked with).
+- **Extraction Guide:** Added `HOW_TO_BUILD_AND_UPDATE.md` inside the embedded codebase folder.
+
+### Fixed
+- **JDK 21 Environment Integration:** Updated `gradle.properties` and Windows environment configuration to point to JDK 21 (`jdk-21.0.13.9-hotspot`), ensuring seamless command-line build execution without path conflicts.
+- **Static Telephony Helper Refactoring:** Refactored `AutoDialerService.buildCallExtras()` to a public companion object method with context pass-through, eliminating code duplication across `AutoDialerService` and `WakeAndCallActivity`.
+
 ## [1.2.0] - 2026-11-03
 
 ### Removed

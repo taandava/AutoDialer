@@ -18,8 +18,9 @@
 *.class
 *.jks
 *.keystore
+*.idsig
+/app/src/main/assets/codebase/
 .kotlin
 captures/
 .externalNativeBuild
 .cxx/
-

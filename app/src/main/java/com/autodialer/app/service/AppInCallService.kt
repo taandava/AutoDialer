@@ -25,10 +25,39 @@ import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
+/**
+ * ================================================================================================
+ * WHAT IS IT:
+ * Custom [InCallService] implementation binding with Android's Telecom framework to monitor live call
+ * lifecycle events, enforce call duration limits, control speakerphone routing, and execute
+ * multi-tier call disconnects.
+ *
+ * WHAT IT DOES:
+ * 1. Receives callbacks when an outbound call is added ([onCallAdded]) or removed ([onCallRemoved]).
+ * 2. Emits local broadcasts (`ACTION_CALL_STATE_CHANGED`) notifying [AutoDialerService] of state
+ *    transitions (DIALING, RINGING, ACTIVE, DISCONNECTED).
+ * 3. Enforces call duration auto-hangup: starts a coroutine timer when call connects and disconnects
+ *    the call upon timer expiration.
+ * 4. Manages modern audio routing: routes audio to the built-in speakerphone using native InCallService
+ *    `setAudioRoute(ROUTE_SPEAKER)` and Android 12+ `AudioManager.setCommunicationDevice`.
+ * 5. Provides a multi-tier fallback call disconnection engine ([disconnectCurrentCall]):
+ *    - Tier 1: InCallService `Call.disconnect()`
+ *    - Tier 2: `TelecomManager.endCall()` (Android 9+)
+ *    - Tier 3: `AudioManager` media hook key event (HEADSETHOOK toggle)
+ *
+ * WHAT THINGS IT IS LINKED WITH:
+ * - System Framework: [InCallService], [TelecomManager], [AudioManager]
+ * - Companion Engine: [AutoDialerService] (listens to call state broadcasts)
+ * - Diagnostics: [AppLogLogger]
+ * ================================================================================================
+ */
 class AppInCallService : InCallService() {
 
     private var durationTimerJob: Job? = null
 
+    /**
+     * Called by Telecom subsystem when an outbound call is created and registered.
+     */
     override fun onCallAdded(call: Call) {
         super.onCallAdded(call)
         activeCall = call
@@ -45,6 +74,9 @@ class AppInCallService : InCallService() {
         broadcastCallState(Call.STATE_DIALING, "Dialing")
     }
 
+    /**
+     * Called by Telecom subsystem when an active or dialing call is terminated.
+     */
     override fun onCallRemoved(call: Call) {
         super.onCallRemoved(call)
         call.unregisterCallback(callCallback)
@@ -59,24 +91,15 @@ class AppInCallService : InCallService() {
         broadcastCallState(Call.STATE_DISCONNECTED, reason)
     }
 
+    /**
+     * Telecom callback monitoring real-time in-call state changes.
+     */
     private val callCallback = object : Call.Callback() {
         override fun onStateChanged(call: Call, state: Int) {
             super.onStateChanged(call, state)
             activeCallState = state
 
-            val reason = if (state == Call.STATE_DISCONNECTED) {
-                resolveDisconnectCause(call.details?.disconnectCause)
-            } else {
-                when (state) {
-                    Call.STATE_DIALING -> "Dialing"
-                    Call.STATE_RINGING -> "Ringing"
-                    Call.STATE_ACTIVE -> "Connected"
-                    Call.STATE_HOLDING -> "On Hold"
-                    else -> "State $state"
-                }
-            }
-
-            lastDisconnectReason = reason
+            val reason = resolveDisconnectCause(call.details?.disconnectCause)
             AppLogLogger.log("AppInCallService", "Call state changed: $state ($reason)")
             broadcastCallState(state, reason)
 
@@ -84,7 +107,6 @@ class AppInCallService : InCallService() {
                 if (activeSpeakerphone) {
                     applySpeakerphone(true)
                 }
-
 
                 // If includeDialingTime was false, start duration timer upon connection
                 if (!activeIncludeDialingTime && activeDurationLimitSeconds > 0) {
@@ -96,6 +118,9 @@ class AppInCallService : InCallService() {
         }
     }
 
+    /**
+     * Configures audio output to built-in speaker or earpiece using modern platform APIs.
+     */
     private fun applySpeakerphone(enable: Boolean) {
         try {
             // Priority 1: InCallService native audio route
@@ -125,38 +150,46 @@ class AppInCallService : InCallService() {
         }
     }
 
+    /**
+     * Starts a coroutine timer that automatically terminates the call upon duration expiration.
+     */
     private fun startDurationLimitTimer(durationSeconds: Int) {
         durationTimerJob?.cancel()
         durationTimerJob = CoroutineScope(Dispatchers.Default).launch {
             delay(durationSeconds.seconds)
             AppLogLogger.log("AppInCallService", "Duration limit reached ($durationSeconds sec). Disconnecting call.")
             lastDisconnectReason = "Completed (Duration Limit)"
-            disconnectCurrentCall(applicationContext)
+            disconnectCurrentCall(this@AppInCallService)
         }
     }
 
+    /**
+     * Sends a local broadcast to notify [AutoDialerService] of call state changes.
+     */
     private fun broadcastCallState(state: Int, reason: String) {
-        activeCallState = state
         val intent = Intent(ACTION_CALL_STATE_CHANGED).apply {
+            setPackage(packageName)
             putExtra(EXTRA_CALL_STATE, state)
             putExtra(EXTRA_DISCONNECT_REASON, reason)
-            setPackage(packageName)
         }
         sendBroadcast(intent)
     }
 
+    /**
+     * Translates Telecom [DisconnectCause] codes into human-readable strings.
+     */
     private fun resolveDisconnectCause(cause: DisconnectCause?): String {
-        if (cause == null) return "Disconnected"
+        if (cause == null) return "Unknown"
         return when (cause.code) {
             DisconnectCause.BUSY -> "Busy"
             DisconnectCause.CANCELED -> "Cancelled"
-            DisconnectCause.MISSED -> "Missed"
+            DisconnectCause.LOCAL -> "Completed (Local Hangup)"
+            DisconnectCause.REMOTE -> "Completed (Remote Hangup)"
             DisconnectCause.REJECTED -> "Rejected"
-            DisconnectCause.REMOTE -> "Remote Hung Up"
-            DisconnectCause.LOCAL -> "Completed (Duration Limit)"
-            DisconnectCause.ERROR -> "Call Failed"
-            DisconnectCause.RESTRICTED -> "Call Restricted"
-            else -> cause.description?.toString()?.ifBlank { null } ?: "Disconnected"
+            DisconnectCause.MISSED -> "Missed"
+            DisconnectCause.ERROR -> "Failed (Error)"
+            DisconnectCause.RESTRICTED -> "Restricted"
+            else -> cause.description?.toString() ?: "Completed"
         }
     }
 
@@ -183,13 +216,11 @@ class AppInCallService : InCallService() {
         @Volatile
         var activeIncludeDialingTime: Boolean = true
 
-
         /**
          * Multi-tier call disconnect engine:
          * 1. InCallService Call.disconnect()
          * 2. TelecomManager.endCall() [Android 9+]
-         * 3. ITelephony reflection
-         * 4. AudioManager media key event (Headset hook toggle)
+         * 3. AudioManager media key event (Headset hook toggle)
          */
         fun disconnectCurrentCall(context: Context? = null) {
             AppLogLogger.log("AppInCallService", "Executing multi-tier call disconnect...")
@@ -212,29 +243,26 @@ class AppInCallService : InCallService() {
                     if (hasPermission) {
                         val telecomManager = context.getSystemService(Context.TELECOM_SERVICE) as? TelecomManager
                         telecomManager?.endCall()
+                        AppLogLogger.log("AppInCallService", "Tier 2 TelecomManager.endCall() invoked successfully")
                     }
                 } catch (e: Exception) {
-                    AppLogLogger.log("AppInCallService", "Tier 2 disconnect failed: ${e.message}")
+                    AppLogLogger.log("AppInCallService", "Tier 2 TelecomManager.endCall() failed: ${e.message}")
                 }
             }
 
-            // Tier 3: Official InCallService disconnect verification
-            if (activeCall != null && activeCallState != Call.STATE_DISCONNECTED) {
-                try {
-                    activeCall?.reject(false, null)
-                } catch (e: Exception) {
-                    // Ignore fallback reject failure
-                }
-            }
-
-            // Tier 4: AudioManager Media Key Fallback
+            // Tier 3: Media button event (Headset hook toggle)
             if (context != null) {
                 try {
                     val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
-                    audioManager?.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_HEADSETHOOK))
-                    audioManager?.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_HEADSETHOOK))
+                    if (audioManager != null) {
+                        val downEvent = KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_HEADSETHOOK)
+                        val upEvent = KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_HEADSETHOOK)
+                        audioManager.dispatchMediaKeyEvent(downEvent)
+                        audioManager.dispatchMediaKeyEvent(upEvent)
+                        AppLogLogger.log("AppInCallService", "Tier 3 AudioManager media keyevent dispatched")
+                    }
                 } catch (e: Exception) {
-                    // Ignore fallback failure
+                    AppLogLogger.log("AppInCallService", "Tier 3 media keyevent failed: ${e.message}")
                 }
             }
         }
